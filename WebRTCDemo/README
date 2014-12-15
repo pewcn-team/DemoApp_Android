@@ -1,0 +1,4 @@
+这个目录包含的是WEBRTC java的封装库
+把video，audio的编码器都封装好了。
+只需要传入对端IP，和显示双方视频的LinearLayout
+
