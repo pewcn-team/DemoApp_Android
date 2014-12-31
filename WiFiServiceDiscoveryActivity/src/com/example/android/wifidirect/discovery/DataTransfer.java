@@ -46,8 +46,7 @@ public class DataTransfer {
 		try {
 			transfer = new DataTransfer();
 			transfer.mIsServer = false;
-			transfer.socket = new Socket();
-			transfer.socket.bind(null);
+			transfer.socket = new Socket("192.168.43.1", 4545);
 			transfer.mGroupOwnerAddress = groupOwnerAddress;
 			Log.v(WiFiServiceDiscoveryActivity.TAG, "createClientTransfer");
 			transfer.handler = handler;
@@ -71,9 +70,10 @@ public class DataTransfer {
 		try {
 			transfer = new DataTransfer();
 			transfer.mIsServer = true;
-			transfer.server_socket = new ServerSocket();
-			transfer.server_socket.setReuseAddress(true);
-			transfer.server_socket.bind(new InetSocketAddress(4545));
+			//InetAddress serverAddr = InetAddress.getByName("192.168.43.115");
+			transfer.server_socket = new ServerSocket(4545);
+			//transfer.server_socket.setReuseAddress(true);
+			//transfer.server_socket.bind(new InetSocketAddress(4545));
 			transfer.handler = handler;
 			transfer.dataReceiver = dataReceiver;
 			Log.v(WiFiServiceDiscoveryActivity.TAG, "createServerTransfer");
@@ -116,50 +116,29 @@ public class DataTransfer {
 				try {
 					if (!mIsServer) {
 
-						socket.connect(
-								new InetSocketAddress(
-										mGroupOwnerAddress.getHostAddress(),
-										WiFiServiceDiscoveryActivity.SERVER_PORT),
-								5000);
-
+//						socket.connect(
+//								new InetSocketAddress(
+//										mGroupOwnerAddress.getHostAddress(),
+//										WiFiServiceDiscoveryActivity.SERVER_PORT),
+//								5000);
+						handleSocket();
 					} 
 					else 
 					{
-						socket = server_socket.accept();
+						while(true)
+						{
+							socket = server_socket.accept();
+							handleSocket();
+						}
+						
 					}
-					mPeer = socket.getInetAddress();
+					
+					
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				handler.obtainMessage(WiFiServiceDiscoveryActivity.MY_HANDLE,
-						this).sendToTarget();
-				Log.d(WiFiServiceDiscoveryActivity.TAG, "start loop");
-				try {
-					iStream = socket.getInputStream();
-					oStream = socket.getOutputStream();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-					return;
-				}
-				byte[] buffer = new byte[1024];
-				int bytes;
-				while (true) {
-					try {
-						// Read from the InputStream
-						bytes = iStream.read(buffer);
-						if (bytes == -1) {
-							break;
-						}
-						Log.d(WiFiServiceDiscoveryActivity.TAG,
-								"Rec:" + String.valueOf(buffer));
-						receiveData(buffer);
-					} catch (IOException e) {
-						Log.e(WiFiServiceDiscoveryActivity.TAG, "disconnected",
-								e);
-					}
-				}
+				
 			}
 		});
 		t.start();
@@ -181,11 +160,47 @@ public class DataTransfer {
     {
     	try {
     		Log.v(WiFiServiceDiscoveryActivity.TAG, "server_socket close");
-			server_socket.close();
+    		if(mIsServer)
+    		{
+    			server_socket.close();
+    		}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    }
+    
+    public void handleSocket()
+    {
+    	mPeer = socket.getInetAddress();
+		handler.obtainMessage(WiFiServiceDiscoveryActivity.MY_HANDLE,
+				this).sendToTarget();
+		Log.d(WiFiServiceDiscoveryActivity.TAG, "start loop");
+		try {
+			iStream = socket.getInputStream();
+			oStream = socket.getOutputStream();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			return;
+		}
+		byte[] buffer = new byte[1024];
+		int bytes;
+		while (true) {
+			try {
+				// Read from the InputStream
+				bytes = iStream.read(buffer);
+//				if (bytes == -1) {
+//					break;
+//				}
+				Log.d(WiFiServiceDiscoveryActivity.TAG,
+						"Rec:" + String.valueOf(buffer));
+				receiveData(buffer);
+			} catch (IOException e) {
+				Log.e(WiFiServiceDiscoveryActivity.TAG, "disconnected",
+						e);
+			}
+		}    	
     }
 	
 	
