@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import android.os.Handler;
@@ -20,12 +21,12 @@ public class DataTransfer {
 		public void onReceiveData(byte[] data);
 	}
 	
-    private InputStream iStream;
-    private OutputStream oStream;
-    private Handler handler;
-    private ServerSocket server_socket = null;
-    private Socket socket = null;
-    private IDataReceiver dataReceiver = null;
+    private InputStream mIStream;
+    private OutputStream mOStream;
+    private Handler mHandler;
+    private ServerSocket mServerSocket = null;
+    private Socket mSocket = null;
+    private IDataReceiver mDataReceiver = null;
     private Boolean mIsServer = false;
     private InetAddress mGroupOwnerAddress;
     private ArrayList<IDataReceiver> mDataReceiverList = new ArrayList<IDataReceiver>();
@@ -43,24 +44,12 @@ public class DataTransfer {
 	public static DataTransfer createClientTransfer(Handler handler, InetAddress groupOwnerAddress)
 	{
 		DataTransfer transfer = null;
-		try {
-			transfer = new DataTransfer();
-			transfer.mIsServer = false;
-			transfer.socket = new Socket("192.168.43.1", 4545);
-			transfer.mGroupOwnerAddress = groupOwnerAddress;
-			Log.v(WiFiServiceDiscoveryActivity.TAG, "createClientTransfer");
-			transfer.handler = handler;
-			transfer.startThread();
-		} catch (IOException e) {
-			try {
-				transfer.socket.close();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			transfer = null;
-			e.printStackTrace();
-		}
+		transfer = new DataTransfer();
+		transfer.mIsServer = false;
+		transfer.mGroupOwnerAddress = groupOwnerAddress;
+		Log.v(WiFiServiceDiscoveryActivity.TAG, "createClientTransfer");
+		transfer.mHandler = handler;
+		transfer.startClientThread();
 		return transfer;
 	}
 	
@@ -71,21 +60,21 @@ public class DataTransfer {
 			transfer = new DataTransfer();
 			transfer.mIsServer = true;
 			//InetAddress serverAddr = InetAddress.getByName("192.168.43.115");
-			transfer.server_socket = new ServerSocket(4545);
+			transfer.mServerSocket = new ServerSocket(4545);
 			//transfer.server_socket.setReuseAddress(true);
 			//transfer.server_socket.bind(new InetSocketAddress(4545));
-			transfer.handler = handler;
-			transfer.dataReceiver = dataReceiver;
+			transfer.mHandler = handler;
+			transfer.mDataReceiver = dataReceiver;
 			Log.v(WiFiServiceDiscoveryActivity.TAG, "createServerTransfer");
-			transfer.startThread();
+			transfer.startServerThread();
 		} catch (IOException e) {
 			
 			e.printStackTrace();
 			Log.w(WiFiServiceDiscoveryActivity.TAG, e.getMessage()); 
-			if(null != transfer.server_socket)
+			if(null != transfer.mServerSocket)
 			{
 				try {
-					transfer.server_socket.close();
+					transfer.mServerSocket.close();
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -100,45 +89,58 @@ public class DataTransfer {
 	
 	public void sendData(byte[] data){
         try {
-            oStream.write(data);
+            mOStream.write(data);
         } catch (IOException e) {
             Log.e(WiFiServiceDiscoveryActivity.TAG, "Exception during write", e);
         }	
 	}
 	
-	
-	private void startThread()
+	private void startServerThread()
 	{
 		Thread t = new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
-					if (!mIsServer) {
 
-//						socket.connect(
-//								new InetSocketAddress(
-//										mGroupOwnerAddress.getHostAddress(),
-//										WiFiServiceDiscoveryActivity.SERVER_PORT),
-//								5000);
+					while (true) {
+						mSocket = mServerSocket.accept();
 						handleSocket();
-					} 
-					else 
-					{
-						while(true)
-						{
-							socket = server_socket.accept();
-							handleSocket();
-						}
-						
 					}
-					
-					
+
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
+
+			}
+		});
+		t.start();
+	}
+	
+	
+	private void startClientThread()
+	{
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					String hostAddress = mGroupOwnerAddress.getHostAddress();
+					String []sub = hostAddress.split(",");
+					if(sub.length == 4)
+					{
+						hostAddress = String.format("%s.%s.%s.1", sub[0], sub[1], sub[2]);
+					}
+					mSocket = new Socket(hostAddress, 4545);
+				} catch (UnknownHostException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				handleSocket();
 			}
 		});
 		t.start();
@@ -162,7 +164,11 @@ public class DataTransfer {
     		Log.v(WiFiServiceDiscoveryActivity.TAG, "server_socket close");
     		if(mIsServer)
     		{
-    			server_socket.close();
+    			mServerSocket.close();
+    		}
+    		else
+    		{
+    			mSocket.close();
     		}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -172,13 +178,13 @@ public class DataTransfer {
     
     public void handleSocket()
     {
-    	mPeer = socket.getInetAddress();
-		handler.obtainMessage(WiFiServiceDiscoveryActivity.MY_HANDLE,
+    	mPeer = mSocket.getInetAddress();
+		mHandler.obtainMessage(WiFiServiceDiscoveryActivity.MY_HANDLE,
 				this).sendToTarget();
 		Log.d(WiFiServiceDiscoveryActivity.TAG, "start loop");
 		try {
-			iStream = socket.getInputStream();
-			oStream = socket.getOutputStream();
+			mIStream = mSocket.getInputStream();
+			mOStream = mSocket.getOutputStream();
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -188,11 +194,7 @@ public class DataTransfer {
 		int bytes;
 		while (true) {
 			try {
-				// Read from the InputStream
-				bytes = iStream.read(buffer);
-//				if (bytes == -1) {
-//					break;
-//				}
+				bytes = mIStream.read(buffer);
 				Log.d(WiFiServiceDiscoveryActivity.TAG,
 						"Rec:" + String.valueOf(buffer));
 				receiveData(buffer);

@@ -19,34 +19,35 @@ import android.util.Log;
 
 public class WifiAPClient {
 	
+    public static final int TYPE_NO_PASSWD = 0x11;  
+    public static final int TYPE_WEP = 0x12;  
+    public static final int TYPE_WPA = 0x13; 
+    
+    public static final int WIFI_CONNECTED = 0x01;  
+    public static final int WIFI_CONNECT_FAILED = 0x02;  
+    public static final int WIFI_CONNECTING = 0x03;  
+    
 	public interface OnConnectListener
 	{
 		public void onConnect(InetAddress address);
 		
 	}
-    public static final int TYPE_NO_PASSWD = 0x11;  
-    public static final int TYPE_WEP = 0x12;  
-    public static final int TYPE_WPA = 0x13;  
+ 
     public String TAG = "WifiAPClient";
 	WifiManager mWifiManager;
 	Context mContext;
 	boolean  mIsConnecting =false;
 	OnConnectListener mListener;
+	
 	public WifiAPClient(Context context, OnConnectListener listener)
 	{
 		mContext = context;
 		mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);  
-		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
-		intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-		intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-		mContext.registerReceiver(mBroadcastReceiver, (intentFilter));
 		mListener = listener;
 	}
 	public void scanAP()
 	{
         mWifiManager.startScan();  
-
 	}
 	
 	private void findAP()
@@ -156,21 +157,7 @@ public class WifiAPClient {
 	            	{
 	            		findAP();
 	            	}
-	            	
 	               
-//	                  
-//	                //有可能是正在获取，或者已经获取了  
-//	                  
-//	                if (isWifiContected(mContext) == WIFI_CONNECTED) {  
-//	                	 Log.d(TAG, " WIFI_CONNECTED ");  
-//	                    //stopTimer();  
-//	                } else if (isWifiContected(mContext) == WIFI_CONNECT_FAILED) {  
-//	                	Log.d(TAG, " WIFI_CONNECTED Failed");  
-//	                    //stopTimer();  
-//	                    //closeWifi();  
-//	                } else if () {  
-//	                      
-//	                }  
 	            }  
 	            else if(intent.getAction().equals(WifiManager.NETWORK_STATE_CHANGED_ACTION))
 	            {
@@ -188,31 +175,49 @@ public class WifiAPClient {
 	        }  
 	    };  
 	    
-	    public static final int WIFI_CONNECTED = 0x01;  
-	    public static final int WIFI_CONNECT_FAILED = 0x02;  
-	    public static final int WIFI_CONNECTING = 0x03;  
-	    /** 
-	     * 判断wifi是否连接成功,不是network 
-	     *  
-	     * @param context 
-	     * @return 
-	     */  
-	    public int isWifiContected(Context context) {  
-	        ConnectivityManager connectivityManager = (ConnectivityManager) context  
-	                .getSystemService(Context.CONNECTIVITY_SERVICE);  
-	        NetworkInfo wifiNetworkInfo = connectivityManager  
-	                .getNetworkInfo(ConnectivityManager.TYPE_WIFI);  
-	          
-	        Log.v(TAG, "isConnectedOrConnecting = " + wifiNetworkInfo.isConnectedOrConnecting());  
-	        Log.d(TAG, "wifiNetworkInfo.getDetailedState() = " + wifiNetworkInfo.getDetailedState());  
-	        if (wifiNetworkInfo.getDetailedState() == DetailedState.OBTAINING_IPADDR  
-	                || wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTING) {  
-	            return WIFI_CONNECTING;  
-	        } else if (wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTED) {  
-	            return WIFI_CONNECTED;  
-	        } else {  
-	            Log.d(TAG, "getDetailedState() == " + wifiNetworkInfo.getDetailedState());  
-	            return WIFI_CONNECT_FAILED;  
-	        }  
-	    } 
+
+	/**
+	 * 判断wifi是否连接成功,不是network
+	 * 
+	 * @param context
+	 * @return
+	 */
+	public int isWifiContected(Context context) {
+		ConnectivityManager connectivityManager = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo wifiNetworkInfo = connectivityManager
+				.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+		Log.v(TAG,
+				"isConnectedOrConnecting = "
+						+ wifiNetworkInfo.isConnectedOrConnecting());
+		Log.d(TAG,
+				"wifiNetworkInfo.getDetailedState() = "
+						+ wifiNetworkInfo.getDetailedState());
+		if (wifiNetworkInfo.getDetailedState() == DetailedState.OBTAINING_IPADDR
+				|| wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTING) {
+			return WIFI_CONNECTING;
+		} else if (wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTED) {
+			return WIFI_CONNECTED;
+		} else {
+			Log.d(TAG,
+					"getDetailedState() == "
+							+ wifiNetworkInfo.getDetailedState());
+			return WIFI_CONNECT_FAILED;
+		}
+	}
+  
+    public void onPause()
+    {
+    	mContext.unregisterReceiver(mBroadcastReceiver);
+    }
+    
+    public void onResume()
+    {
+		IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+		intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+		intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+		mContext.registerReceiver(mBroadcastReceiver, (intentFilter));
+    }
 }

@@ -62,19 +62,8 @@ public class WifiAPServer {
 
 			netConfig.allowedAuthAlgorithms
 					.set(WifiConfiguration.AuthAlgorithm.OPEN);
-			//netConfig.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
-//			netConfig.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
 			netConfig.allowedKeyManagement
 					.set(WifiConfiguration.KeyMgmt.WPA_PSK);
-//			netConfig.allowedPairwiseCiphers
-//					.set(WifiConfiguration.PairwiseCipher.CCMP);
-//			netConfig.allowedPairwiseCiphers
-//					.set(WifiConfiguration.PairwiseCipher.TKIP);
-//			netConfig.allowedGroupCiphers
-//					.set(WifiConfiguration.GroupCipher.CCMP);
-//			netConfig.allowedGroupCiphers
-//					.set(WifiConfiguration.GroupCipher.TKIP);
-
 			method1.invoke(mWifiManager, netConfig, true);
 
 		} catch (IllegalArgumentException e) {
@@ -161,16 +150,24 @@ public class WifiAPServer {
 	            }
 	        }  
 	    };  
-	    
-	  public void register()
-	  {
-		  IntentFilter filter = new IntentFilter(WifiManager.RSSI_CHANGED_ACTION);
-		  mContext.registerReceiver(mBroadcastReceiver, new IntentFilter(filter));
-	  }
 	  
-	  public void unRegister()
+	  
+	  public void onPause()
 	  {
 		  mContext.unregisterReceiver(mBroadcastReceiver);
 	  }
+	  
+	  public void onResume()
+	  {
+		  IntentFilter filter = new IntentFilter(WifiManager.RSSI_CHANGED_ACTION);
+		  mContext.registerReceiver(mBroadcastReceiver, new IntentFilter(filter));			  
+	  }
+	  
+	  public void onStop()
+	  {
+		  
+	  }
+	  
+	  
 
 }
