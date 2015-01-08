@@ -1,5 +1,7 @@
 package com.example.android.wifidirect.discovery;
 
+import java.io.IOException;
+
 import org.webrtc.webrtcdemo.MediaEngineObserver;
 import org.webrtc.webrtcdemo.WebRTCLib;
 
@@ -128,6 +130,13 @@ public class ControlFragment extends Fragment {
 			{
 				mBtnUp.setSelected(true);
 				mBtnUp.setBackgroundColor(0xFFFF0000);
+				try {
+					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00002000");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}	
 			if(btnIndex == BUTTON_INDEX_DOWN)
 			{
@@ -151,6 +160,13 @@ public class ControlFragment extends Fragment {
 			{
 				mBtnUp.setSelected(false);
 				mBtnUp.setBackgroundColor(0xFFFFFFFF);
+				try {
+					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00002000");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}	
 			if(btnIndex == BUTTON_INDEX_DOWN)
 			{
@@ -172,7 +188,7 @@ public class ControlFragment extends Fragment {
 	
 	private void sendCommand(ControlCommand command)
 	{
-		mDataTransfer.sendData(command.toBytes(command));
+		mDataTransfer.sendData(command.toBytes());
 	}
 	
     @Override
@@ -181,7 +197,7 @@ public class ControlFragment extends Fragment {
         mWebrtc = new WebRTCLib();
         if(mIsServer)
         {
-        	mWebrtc.open(this.getActivity(),mRemoteIP,false,true);
+        	mWebrtc.open(this.getActivity(),mRemoteIP,true,true);
         }
         else
         {
@@ -195,6 +211,7 @@ public class ControlFragment extends Fragment {
         }
     }
     
+    @Override
     public void onPause(){
         super.onPause();
 
@@ -207,5 +224,17 @@ public class ControlFragment extends Fragment {
 
     }
 	
+    @Override
+    public void onStop(){
+        super.onStop();
+
+        if(mWebrtc != null){
+        	mWebrtc.setEngineObserver(null);
+        	mWebrtc.stopCall();
+        	mWebrtc.close();
+        	mWebrtc = null;
+        }
+
+    }
 
 }

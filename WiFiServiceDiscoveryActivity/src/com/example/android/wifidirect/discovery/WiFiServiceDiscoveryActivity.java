@@ -3,6 +3,8 @@ package com.example.android.wifidirect.discovery;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.KeyguardManager;
+import android.app.KeyguardManager.KeyguardLock;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -26,11 +28,14 @@ import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.android.wifidirect.discovery.DataTransfer.IConnectionListener;
 import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
 import com.example.android.wifidirect.discovery.WifiP2PConnection.StateChangeListener;
 import com.example.android.wifidirect.discovery.WifiPeerList.DeviceClickListener;
@@ -98,6 +103,8 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     private boolean mIsClientCreated = false;
     private WifiAPServer mServer = null;
     private WifiAPClient mClient = null;
+    private PowerManager.WakeLock mWakeLock = null;
+    private ControlFragment mControlFragment = null;
     public Handler getHandler() {
         return handler;
     }
@@ -111,73 +118,11 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.v(TAG, "onCreate");
+   	 KeyguardManager manager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);  
+   	 KeyguardLock keyguardlock = manager.newKeyguardLock("");
+   	 keyguardlock.disableKeyguard();
         setContentView(R.layout.main);
-        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        boolean isServer = true;
-		if (!isServer) {
-			mWifiManager.setWifiEnabled(true);
-			mClient = new WifiAPClient(this,
-					new WifiAPClient.OnConnectListener() {
-
-						@Override
-						public void onConnect(InetAddress address) {
-							mIsServer = false;
-							final InetAddress fAddress = address;
-							if (false == mIsClientCreated) {
-								mIsClientCreated = true;
-								Thread t = new Thread(new Runnable() {
-									@Override
-									public void run() {
-										if (null == mDataTransfer) {
-											mDataTransfer = DataTransfer
-													.createClientTransfer(
-															((MessageTarget) WiFiServiceDiscoveryActivity.this)
-																	.getHandler(),
-															fAddress);
-										}
-									}
-								});
-								t.start();
-							}
-
-						}
-					});
-			mClient.scanAP();
-		}
-        else
-        {
-        	mWifiManager.setWifiEnabled(false);
-        	mServer = new WifiAPServer(this,
-					new WifiAPServer.OnConnectListener() {
-						@Override
-						public void onConnect() {
-							mIsServer = true;
-							mDataTransfer = DataTransfer
-									.createServerTransfer(
-											((MessageTarget) WiFiServiceDiscoveryActivity.this)
-													.getHandler(),
-											new DataTransfer.IDataReceiver() {
-
-												@Override
-												public void onReceiveData(
-														byte[] data) {
-													final String readMessage = new String(
-															data);
-													Log.d(TAG, readMessage);
-													runOnUiThread(new Runnable() {
-														@Override
-														public void run() {
-															(chatFragment)
-																	.pushMessage("Buddy: "
-																			+ readMessage);
-														}
-													});
-												}
-											});
-						}
-					});
-			
-		}
+        init();
 		statusTxtView = (TextView) findViewById(R.id.status_text);
 		peerList = new WifiPeerList();
 		getFragmentManager().beginTransaction()
@@ -202,7 +147,12 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     	{
         	mDataTransfer.destroy();    		
     	}
+		if(getFragmentManager().findFragmentByTag("control") != null)
+		{
+			getFragmentManager().beginTransaction().remove(mControlFragment).commit();
+		}
         super.onStop();
+        System.exit(10);
     }
 
     /**
@@ -364,7 +314,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
                 break;
 
             case MY_HANDLE:
-            	ControlFragment controlFragment = new ControlFragment(this, mDataTransfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+            	mControlFragment = new ControlFragment(this, mDataTransfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
 					@Override
 					public void newStats(String stats) {
                       handler.obtainMessage(WiFiServiceDiscoveryActivity.UPDATE_STATE, stats)
@@ -373,7 +323,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 					}
 				}, mDataTransfer, mIsServer);
             	getFragmentManager().beginTransaction().remove(peerList).commit();
-            	getFragmentManager().beginTransaction().replace(R.id.container_root, controlFragment).commit();           	
+            	getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commit();           	
                 break;
             case UPDATE_STATE:
                 String stateString = (String)msg.obj;
@@ -386,19 +336,30 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     @Override
     public void onResume() {
         super.onResume();
+        if(null == mWakeLock)
+        {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);  
+            mWakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, this.getClass().getCanonicalName());  
+            mWakeLock.acquire();         	
+        }
+
         if(mIsServer)
         {
         	mServer.onResume();
         }
         else
         {
-        	mClient.onPause();
+        	mClient.onResume();
         }
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        if (mWakeLock !=null&& mWakeLock.isHeld()) {  
+            mWakeLock.release();  
+            mWakeLock =null;  
+        }    
         if(mIsServer)
         {
         	 mServer.onPause();
@@ -437,6 +398,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     	statusTxtView.setText(message);
     }
     
+    @Deprecated
     private void initWifiP2P()
     {
       intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
@@ -486,25 +448,25 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 		            	mDataTransfer.destroy();
 		            }
 		            mIsServer = true;
-		            mDataTransfer = DataTransfer.createServerTransfer(((MessageTarget)WiFiServiceDiscoveryActivity.this).getHandler(), new DataTransfer.IDataReceiver() {
-						
-						@Override
-						public void onReceiveData(byte[] data) {
-							// TODO Auto-generated method stub
-			                final String readMessage = new String(data);
-			                Log.d(TAG, readMessage);
-			                runOnUiThread(new Runnable() {
-								@Override
-								public void run() {
-									(chatFragment).pushMessage("Buddy: " + readMessage);							
-								}
-							});				
-						}
-					});
+//		            mDataTransfer = DataTransfer.createServerTransfer(((MessageTarget)WiFiServiceDiscoveryActivity.this).getHandler(), new DataTransfer.IDataReceiver() {
+//						
+//						@Override
+//						public void onReceiveData(byte[] data) {
+//							// TODO Auto-generated method stub
+//			                final String readMessage = new String(data);
+//			                Log.d(TAG, readMessage);
+//			                runOnUiThread(new Runnable() {
+//								@Override
+//								public void run() {
+//									(chatFragment).pushMessage("Buddy: " + readMessage);							
+//								}
+//							});				
+//						}
+//					});
 		        } else {
 		            Log.d(TAG, "Connected as peer");
 		            mIsServer = false;
-		            mDataTransfer = DataTransfer.createClientTransfer(((MessageTarget)WiFiServiceDiscoveryActivity.this).getHandler(), info.groupOwnerAddress);
+		           // mDataTransfer = DataTransfer.createClientTransfer(((MessageTarget)WiFiServiceDiscoveryActivity.this).getHandler(), info.groupOwnerAddress);
 		        }
 				break;	
 			case WifiP2PConnection.STATE_TIMEOUT:
@@ -519,5 +481,131 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     
     mConnection.initial();
     }
+    
+    private void init()
+    {
+    	mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        boolean isServer = false;
+		if (!isServer) {
+			mWifiManager.setWifiEnabled(false);
+        	try {
+				Thread.currentThread().sleep(2000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			mWifiManager.setWifiEnabled(true);
+			mClient = new WifiAPClient(this,
+					new WifiAPClient.OnConnectListener() {
 
+						@Override
+						public void onConnect(InetAddress address) {
+							mIsServer = false;
+							final InetAddress fAddress = address;
+							if (false == mIsClientCreated) {
+								mIsClientCreated = true;
+								Thread t = new Thread(new Runnable() {
+									@Override
+									public void run() {
+										if (null == mDataTransfer) {
+											mDataTransfer = DataTransfer
+													.createClientTransfer(
+															((MessageTarget) WiFiServiceDiscoveryActivity.this)
+																	.getHandler(),
+															fAddress, mConnectionListener);
+										}
+									}
+								});
+								t.start();
+							}
+
+						}
+
+						@Override
+						public void onDisconnect() {
+							disconnect();
+							
+						}
+					});
+			mClient.scanAP();
+		}
+        else
+        {
+
+        	mWifiManager.setWifiEnabled(true);
+        	try {
+				Thread.currentThread().sleep(2000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	mWifiManager.setWifiEnabled(false);
+        	mServer = new WifiAPServer(this,
+					new WifiAPServer.OnConnectListener() {
+						@Override
+						public void onConnect() {
+							mIsServer = true;
+							mDataTransfer = DataTransfer
+									.createServerTransfer(
+											((MessageTarget) WiFiServiceDiscoveryActivity.this)
+													.getHandler(),
+											new DataTransfer.IDataReceiver() {
+
+												@Override
+												public void onReceiveData(
+														byte[] data) {
+													final String readMessage = new String(
+															data);
+													Log.d(TAG, readMessage);
+													runOnUiThread(new Runnable() {
+														@Override
+														public void run() {
+															(chatFragment)
+																	.pushMessage("Buddy: "
+																			+ readMessage);
+														}
+													});
+												}
+											}, mConnectionListener);
+						}
+
+						@Override
+						public void onDisconnect() {
+							disconnect();
+						}
+					});
+			
+		}
+    }
+    
+    DataTransfer.IConnectionListener mConnectionListener = new IConnectionListener() {
+		
+		@Override
+		public void onDisconnect() {
+			disconnect();
+		}
+	};
+	
+	private void disconnect()
+	{
+		if(getFragmentManager().findFragmentByTag("control") != null)
+		{
+			getFragmentManager().beginTransaction().remove(mControlFragment).commit();
+		}
+		if(null != mDataTransfer)
+		{
+			mDataTransfer.destroy();
+		}
+		mServer.onPause();
+		init();	
+		
+        if(mIsServer)
+        {
+        	mServer.onResume();
+        }
+        else
+        {
+        	mClient.onResume();
+        }
+	}
 }

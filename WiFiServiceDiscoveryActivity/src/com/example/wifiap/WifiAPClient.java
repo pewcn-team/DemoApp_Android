@@ -31,6 +31,8 @@ public class WifiAPClient {
 	{
 		public void onConnect(InetAddress address);
 		
+		public void onDisconnect();
+		
 	}
  
     public String TAG = "WifiAPClient";
@@ -38,7 +40,7 @@ public class WifiAPClient {
 	Context mContext;
 	boolean  mIsConnecting =false;
 	OnConnectListener mListener;
-	
+	boolean mIsConnected = false;
 	public WifiAPClient(Context context, OnConnectListener listener)
 	{
 		mContext = context;
@@ -168,7 +170,13 @@ public class WifiAPClient {
 	                	int ip = winfo.getIpAddress();
 	                	InetAddress address = intToInetAddress(ip);
 	                	mListener.onConnect(address);
-	                	
+	                	mIsConnected = true;
+	            	}
+	            	else if(mIsConnected == true && (0 == info.getDetailedState().compareTo(NetworkInfo.DetailedState.DISCONNECTING)||0 == info.getDetailedState().compareTo(NetworkInfo.DetailedState.DISCONNECTED)))
+	            	{
+	            		Log.v(TAG, "wifi disconnect!");
+	            		mIsConnected = false;
+	            		mListener.onDisconnect();
 	            	}
 	            	
 	            }

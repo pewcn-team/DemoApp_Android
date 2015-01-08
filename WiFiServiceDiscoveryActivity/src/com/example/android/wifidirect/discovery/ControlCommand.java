@@ -6,7 +6,7 @@ public class ControlCommand implements ICommand {
 	byte mDirection;
 	byte mState;
 	@Override
-	public byte[] toBytes(ICommand command) {
+	public byte[] toBytes() {
 		// TODO Auto-generated method stub
 		byte[] buffer = new byte[3];
 		buffer[0] = mType;
@@ -20,10 +20,9 @@ public class ControlCommand implements ICommand {
 		// TODO Auto-generated method stub
 		if(buffer[0] == ICommand.TYPE_CONTROL)
 		{
-			ControlCommand command = new ControlCommand();
-			command.mDirection = buffer[1];
-			command.mState = buffer[2];
-			return command;
+			mDirection = buffer[1];
+			mState = buffer[2];
+			return this;
 		}
 		return null;
 	}

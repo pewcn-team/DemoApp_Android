@@ -21,6 +21,11 @@ public class DataTransfer {
 		public void onReceiveData(byte[] data);
 	}
 	
+	public interface IConnectionListener
+	{
+		public void onDisconnect();
+	}
+	
     private InputStream mIStream;
     private OutputStream mOStream;
     private Handler mHandler;
@@ -31,6 +36,8 @@ public class DataTransfer {
     private InetAddress mGroupOwnerAddress;
     private ArrayList<IDataReceiver> mDataReceiverList = new ArrayList<IDataReceiver>();
     private InetAddress mPeer;
+    private IConnectionListener mConnectionListener = null;
+    private boolean mIsConnected = false;
     public void registerDataReceiver(IDataReceiver dataReceiver)
     {
     	mDataReceiverList.add(dataReceiver);
@@ -41,7 +48,7 @@ public class DataTransfer {
     	mDataReceiverList.remove(dataReceiver);
     }
     
-	public static DataTransfer createClientTransfer(Handler handler, InetAddress groupOwnerAddress)
+	public static DataTransfer createClientTransfer(Handler handler, InetAddress groupOwnerAddress, IConnectionListener listener)
 	{
 		DataTransfer transfer = null;
 		transfer = new DataTransfer();
@@ -49,22 +56,21 @@ public class DataTransfer {
 		transfer.mGroupOwnerAddress = groupOwnerAddress;
 		Log.v(WiFiServiceDiscoveryActivity.TAG, "createClientTransfer");
 		transfer.mHandler = handler;
+		transfer.mConnectionListener = listener;
 		transfer.startClientThread();
 		return transfer;
 	}
 	
-	public static DataTransfer createServerTransfer(Handler handler, IDataReceiver dataReceiver)
+	public static DataTransfer createServerTransfer(Handler handler, IDataReceiver dataReceiver, IConnectionListener listener)
 	{
 		DataTransfer transfer = null;
 		try {
 			transfer = new DataTransfer();
 			transfer.mIsServer = true;
-			//InetAddress serverAddr = InetAddress.getByName("192.168.43.115");
 			transfer.mServerSocket = new ServerSocket(4545);
-			//transfer.server_socket.setReuseAddress(true);
-			//transfer.server_socket.bind(new InetSocketAddress(4545));
 			transfer.mHandler = handler;
 			transfer.mDataReceiver = dataReceiver;
+			transfer.mConnectionListener = listener;
 			Log.v(WiFiServiceDiscoveryActivity.TAG, "createServerTransfer");
 			transfer.startServerThread();
 		} catch (IOException e) {
@@ -105,6 +111,7 @@ public class DataTransfer {
 
 					while (true) {
 						mSocket = mServerSocket.accept();
+						mIsConnected = true;
 						handleSocket();
 					}
 
@@ -127,12 +134,14 @@ public class DataTransfer {
 			public void run() {
 				try {
 					String hostAddress = mGroupOwnerAddress.getHostAddress();
-					String []sub = hostAddress.split(",");
+					String []sub = hostAddress.split("\\.");
 					if(sub.length == 4)
 					{
 						hostAddress = String.format("%s.%s.%s.1", sub[0], sub[1], sub[2]);
 					}
 					mSocket = new Socket(hostAddress, 4545);
+					mIsConnected = true;
+					handleSocket();
 				} catch (UnknownHostException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -140,7 +149,7 @@ public class DataTransfer {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				handleSocket();
+				
 			}
 		});
 		t.start();
@@ -148,6 +157,12 @@ public class DataTransfer {
 	
 	private void receiveData(byte[] buffer)
 	{
+		if(null != new ExitCommand().fromBytes(buffer))
+		{
+			mConnectionListener.onDisconnect();
+			return;
+		}
+		
 		for(IDataReceiver dataReceiver:mDataReceiverList)
 		{
 			dataReceiver.onReceiveData(buffer);
@@ -160,20 +175,40 @@ public class DataTransfer {
     
     public void destroy()
     {
+    	//
+
+
     	try {
     		Log.v(WiFiServiceDiscoveryActivity.TAG, "server_socket close");
     		if(mIsServer)
     		{
-    			mServerSocket.close();
+
+    			if(null != mSocket)
+    			{
+    		    	ExitCommand exit = new ExitCommand();
+    		    	sendData(exit.toBytes());
+    				mSocket.close();
+    			}
+    			if(null != mServerSocket)
+    			{
+    				mServerSocket.close();
+    			}
+    			
     		}
     		else
     		{
-    			mSocket.close();
+    			if(null != mSocket)
+    			{
+    		    	ExitCommand exit = new ExitCommand();
+    		    	sendData(exit.toBytes());
+    				mSocket.close();
+    			}
     		}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    	mIsConnected = false;
     }
     
     public void handleSocket()
@@ -192,7 +227,7 @@ public class DataTransfer {
 		}
 		byte[] buffer = new byte[1024];
 		int bytes;
-		while (true) {
+		while (mIsConnected) {
 			try {
 				bytes = mIStream.read(buffer);
 				Log.d(WiFiServiceDiscoveryActivity.TAG,
@@ -201,9 +236,11 @@ public class DataTransfer {
 			} catch (IOException e) {
 				Log.e(WiFiServiceDiscoveryActivity.TAG, "disconnected",
 						e);
+				break;
 			}
 		}    	
     }
+    
 	
 	
 }

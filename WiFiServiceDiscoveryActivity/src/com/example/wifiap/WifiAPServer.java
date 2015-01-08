@@ -30,6 +30,8 @@ public class WifiAPServer {
 	{
 		public void onConnect();
 		
+		public void onDisconnect();
+		
 	}
 	
 	public WifiAPServer (Context context, OnConnectListener listener)
@@ -145,6 +147,11 @@ public class WifiAPServer {
 //	                	mListener.onConnect(address);
 	            		
 	                	
+	            	}
+	            	else if(0 == info.getDetailedState().compareTo(NetworkInfo.DetailedState.DISCONNECTING)||0 == info.getDetailedState().compareTo(NetworkInfo.DetailedState.DISCONNECTED))
+	            	{
+	            		Log.v(TAG, "wifi disconnect!");
+	            		mListener.onDisconnect();
 	            	}
 	            	
 	            }
