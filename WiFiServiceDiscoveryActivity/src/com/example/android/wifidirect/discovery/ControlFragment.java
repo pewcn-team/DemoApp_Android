@@ -10,6 +10,7 @@ import com.example.android.wifidirect.discovery.DataTransfer.IDataReceiver;
 import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -39,6 +40,7 @@ public class ControlFragment extends Fragment {
 	private WebRTCLib mWebrtc;
 	private Activity mActivity;
     boolean mIsServer = false;
+    private ControlCommand mCurrControlCommand = null; 
 	public ControlFragment(Activity activity, String remoteIP, MediaEngineObserver observer, DataTransfer dataTransfer, boolean isServer)
 	{
 		mActivity = activity;
@@ -99,7 +101,21 @@ public class ControlFragment extends Fragment {
 			{
 				command.mDirection = (byte) BUTTON_INDEX_RIGHT;
 			}
-			sendCommand(command);
+			if(mCurrControlCommand == null)
+			{
+				sendCommand(command);
+				mCurrControlCommand = command;
+				
+			}
+			else
+			{
+				if(mCurrControlCommand.mState!=command.mState||mCurrControlCommand.mDirection!=command.mDirection)
+				{
+					sendCommand(command);
+					mCurrControlCommand = command;
+				}
+			}
+			
 			return false;
 		}
 	};
@@ -131,8 +147,9 @@ public class ControlFragment extends Fragment {
 				mBtnUp.setSelected(true);
 				mBtnUp.setBackgroundColor(0xFFFF0000);
 				try {
-					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
-					Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00002000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+					Runtime.getRuntime().exec("hwacc w 0xd4019118 0x00000002");
+					Log.v("Control", "Press Forward Button");
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -142,16 +159,40 @@ public class ControlFragment extends Fragment {
 			{
 				mBtnDown.setSelected(true);
 				mBtnDown.setBackgroundColor(0xFFFF0000);
+				try {
+					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00002000");
+					Log.v("Control", "Press Back Button");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			if(btnIndex == BUTTON_INDEX_LEFT)
 			{
 				mBtnLeft.setSelected(true);
 				mBtnLeft.setBackgroundColor(0xFFFF0000);
+				try {
+					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00020000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00020000");
+					Log.v("Control", "Press Left Button");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			if(btnIndex == BUTTON_INDEX_RIGHT)
 			{
 				mBtnRight.setSelected(true);
 				mBtnRight.setBackgroundColor(0xFFFF0000);
+				try {
+					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00010000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00010000");
+					Log.v("Control", "Press Right Button");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		else if(state == BUTTON_STATE_UP)
@@ -161,8 +202,9 @@ public class ControlFragment extends Fragment {
 				mBtnUp.setSelected(false);
 				mBtnUp.setBackgroundColor(0xFFFFFFFF);
 				try {
-					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
-					Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00002000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+					Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00000002");
+					Log.v("Control", "Release Forward Button");
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -172,16 +214,40 @@ public class ControlFragment extends Fragment {
 			{
 				mBtnDown.setSelected(false);
 				mBtnDown.setBackgroundColor(0xFFFFFFFF);
+				try {
+					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00002000");
+					Log.v("Control", "Release Back Button");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			if(btnIndex == BUTTON_INDEX_LEFT)
 			{
 				mBtnLeft.setSelected(false);
 				mBtnLeft.setBackgroundColor(0xFFFFFFFF);
+				try {
+					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00020000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00020000");
+					Log.v("Control", "Release Left Button");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			if(btnIndex == BUTTON_INDEX_RIGHT)
 			{
 				mBtnRight.setSelected(false);
 				mBtnRight.setBackgroundColor(0xFFFFFFFF);
+				try {
+					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00010000");
+					Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00010000");
+					Log.v("Control", "Release Right Button");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 	}

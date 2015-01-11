@@ -485,7 +485,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     private void init()
     {
     	mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        boolean isServer = false;
+        boolean isServer = true;
 		if (!isServer) {
 			mWifiManager.setWifiEnabled(false);
         	try {
