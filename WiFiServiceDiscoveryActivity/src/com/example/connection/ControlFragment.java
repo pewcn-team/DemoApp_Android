@@ -1,11 +1,14 @@
-package com.example.android.wifidirect.discovery;
+package com.example.connection;
 
 import java.io.IOException;
 
 import org.webrtc.webrtcdemo.MediaEngineObserver;
 import org.webrtc.webrtcdemo.WebRTCLib;
 
-import com.example.android.wifidirect.discovery.DataTransfer.IDataReceiver;
+import com.example.android.wifidirect.discovery.R;
+import com.example.android.wifidirect.discovery.R.id;
+import com.example.android.wifidirect.discovery.R.layout;
+import com.example.connection.DataTransfer.IDataReceiver;
 
 import android.app.Activity;
 import android.app.Fragment;

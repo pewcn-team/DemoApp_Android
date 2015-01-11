@@ -1,4 +1,4 @@
-package com.example.android.wifidirect.discovery;
+package com.example.connection;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +10,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+
+import com.example.android.wifidirect.discovery.WiFiServiceDiscoveryActivity;
 
 import android.os.Handler;
 import android.util.Log;
@@ -23,7 +25,11 @@ public class DataTransfer {
 	
 	public interface IConnectionListener
 	{
+		
+		public void onConnect();
+		
 		public void onDisconnect();
+		
 	}
 	
     private InputStream mIStream;

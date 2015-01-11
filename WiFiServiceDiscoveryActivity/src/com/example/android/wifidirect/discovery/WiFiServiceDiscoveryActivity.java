@@ -35,11 +35,13 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.android.wifidirect.discovery.DataTransfer.IConnectionListener;
 import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
 import com.example.android.wifidirect.discovery.WifiP2PConnection.StateChangeListener;
 import com.example.android.wifidirect.discovery.WifiPeerList.DeviceClickListener;
 import com.example.android.wifidirect.discovery.WifiPeerList.WiFiDevicesAdapter;
+import com.example.connection.ControlFragment;
+import com.example.connection.DataTransfer;
+import com.example.connection.DataTransfer.IConnectionListener;
 import com.example.wifiap.WifiAPClient;
 import com.example.wifiap.WifiAPServer;
 
@@ -299,7 +301,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 //                appendStatus("Failed connecting to service");
 //            }
 //        });
-    	mConnection.connect(device);
+//    	mConnection.connect(device);
     }
 
     @Override
@@ -500,24 +502,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 
 						@Override
 						public void onConnect(InetAddress address) {
-							mIsServer = false;
-							final InetAddress fAddress = address;
-							if (false == mIsClientCreated) {
-								mIsClientCreated = true;
-								Thread t = new Thread(new Runnable() {
-									@Override
-									public void run() {
-										if (null == mDataTransfer) {
-											mDataTransfer = DataTransfer
-													.createClientTransfer(
-															((MessageTarget) WiFiServiceDiscoveryActivity.this)
-																	.getHandler(),
-															fAddress, mConnectionListener);
-										}
-									}
-								});
-								t.start();
-							}
+							
 
 						}
 
@@ -527,7 +512,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 							
 						}
 					});
-			mClient.scanAP();
+			mClient.initial();
 		}
         else
         {
@@ -583,6 +568,12 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 		@Override
 		public void onDisconnect() {
 			disconnect();
+		}
+
+		@Override
+		public void onConnect() {
+			// TODO Auto-generated method stub
+			
 		}
 	};
 	

@@ -93,7 +93,7 @@ public class WifiAPServer {
      * @param context 
      * @return 
      */  
-    public int isWifiContected(Context context) {  
+    private int isWifiContected(Context context) {  
         ConnectivityManager connectivityManager = (ConnectivityManager) context  
                 .getSystemService(Context.CONNECTIVITY_SERVICE);  
         NetworkInfo wifiNetworkInfo = connectivityManager  

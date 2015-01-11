@@ -4,6 +4,12 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 
+import com.example.android.wifidirect.discovery.WiFiServiceDiscoveryActivity;
+import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
+import com.example.connection.DataTransfer;
+import com.example.connection.DataTransfer.IConnectionListener;
+import com.example.connection.IConnection;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -17,7 +23,7 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 
-public class WifiAPClient {
+public class WifiAPClient implements IConnection{
 	
     public static final int TYPE_NO_PASSWD = 0x11;  
     public static final int TYPE_WEP = 0x12;  
@@ -36,106 +42,27 @@ public class WifiAPClient {
 	}
  
     public String TAG = "WifiAPClient";
-	WifiManager mWifiManager;
-	Context mContext;
-	boolean  mIsConnecting =false;
-	OnConnectListener mListener;
-	boolean mIsConnected = false;
+    private WifiManager mWifiManager;
+    private Context mContext;
+    private boolean  mIsConnecting =false;
+    private OnConnectListener mListener;
+    private boolean mIsConnected = false;
+	private String mTargetName = "tank_test";
+	private String mTargetPassword = "12345678";
+	private DataTransfer mDataTransfer;
+	private boolean mIsClientCreated = false;
+	
 	public WifiAPClient(Context context, OnConnectListener listener)
 	{
 		mContext = context;
 		mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);  
 		mListener = listener;
 	}
-	public void scanAP()
-	{
-        mWifiManager.startScan();  
-	}
-	
-	private void findAP()
-	{
-        List<ScanResult> results = mWifiManager.getScanResults();  
-        for(ScanResult result: results)
-        {
-        	if(result.SSID.equals("tank_test"))
-        	{
-        		if(WifiManager.calculateSignalLevel(result.level, 100) > 60)
-        		{
-        			connectServer("tank_test", "12345678");
-        			break;
-        		}
-        	}
-        }		
-	}
-	
-	public void connectServer(String SSID, String password)
-	{
-		int type = TYPE_WPA;
-		WifiConfiguration config = new WifiConfiguration();  
-        config.allowedAuthAlgorithms.clear();  
-        config.allowedGroupCiphers.clear();  
-        config.allowedKeyManagement.clear();  
-        config.allowedPairwiseCiphers.clear();  
-        config.allowedProtocols.clear();  
-        config.SSID = "\"" + SSID + "\"";  
-  
-        WifiConfiguration tempConfig = this.IsExsits(SSID);  
-        if (tempConfig != null) {  
-            mWifiManager.removeNetwork(tempConfig.networkId);  
-        }  
-          
-        // 分为三种情况：1没有密码2用wep加密3用wpa加密  
-        if (type == TYPE_NO_PASSWD) {// WIFICIPHER_NOPASS  
-            config.wepKeys[0] = "";  
-            config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);  
-            config.wepTxKeyIndex = 0;  
-              
-        } else if (type == TYPE_WEP) {  //  WIFICIPHER_WEP   
-            config.hiddenSSID = true;  
-            config.wepKeys[0] = "\"" + password + "\"";  
-            config.allowedAuthAlgorithms  
-                    .set(WifiConfiguration.AuthAlgorithm.SHARED);  
-            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);  
-            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);  
-            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40);  
-            config.allowedGroupCiphers  
-                    .set(WifiConfiguration.GroupCipher.WEP104);  
-            config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);  
-            config.wepTxKeyIndex = 0;  
-        } else if (type == TYPE_WPA) {   // WIFICIPHER_WPA  
-            config.preSharedKey = "\"" + password + "\"";  
-            config.hiddenSSID = true;  
-            config.allowedAuthAlgorithms  
-                    .set(WifiConfiguration.AuthAlgorithm.OPEN);  
-            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);  
-            config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);  
-            config.allowedPairwiseCiphers  
-                    .set(WifiConfiguration.PairwiseCipher.TKIP);  
-            // config.allowedProtocols.set(WifiConfiguration.Protocol.WPA);  
-            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);  
-            config.allowedPairwiseCiphers  
-                    .set(WifiConfiguration.PairwiseCipher.CCMP);  
-            config.status = WifiConfiguration.Status.ENABLED;  
-        }  
-        
-        int wcgID = mWifiManager.addNetwork(config);  
-        boolean result = mWifiManager.enableNetwork(wcgID, true);  
-        if(result)
-        {
-        	mIsConnecting = true;
-        }
-	}
-	
-    private WifiConfiguration IsExsits(String SSID) {  
-        List<WifiConfiguration> existingConfigs = mWifiManager.getConfiguredNetworks();  
-        for (WifiConfiguration existingConfig : existingConfigs) {  
-            if (existingConfig.SSID.equals("\"" + SSID + "\"") /*&& existingConfig.preSharedKey.equals("\"" + password + "\"")*/) {  
-                return existingConfig;  
-            }  
-        }  
-        return null;  
-    }  
-    
+
+    /**地址转换程序
+     * @param hostAddress
+     * @return
+     */
     public static InetAddress intToInetAddress(int hostAddress) {
         byte[] addressBytes = { (byte)(0xff & hostAddress),
                                 (byte)(0xff & (hostAddress >> 8)),
@@ -159,7 +86,6 @@ public class WifiAPClient {
 	            	{
 	            		findAP();
 	            	}
-	               
 	            }  
 	            else if(intent.getAction().equals(WifiManager.NETWORK_STATE_CHANGED_ACTION))
 	            {
@@ -169,8 +95,9 @@ public class WifiAPClient {
 	                	WifiInfo winfo = mWifiManager.getConnectionInfo();
 	                	int ip = winfo.getIpAddress();
 	                	InetAddress address = intToInetAddress(ip);
-	                	mListener.onConnect(address);
+	                	createDataTransfer(address);
 	                	mIsConnected = true;
+	                	
 	            	}
 	            	else if(mIsConnected == true && (0 == info.getDetailedState().compareTo(NetworkInfo.DetailedState.DISCONNECTING)||0 == info.getDetailedState().compareTo(NetworkInfo.DetailedState.DISCONNECTED)))
 	            	{
@@ -190,7 +117,7 @@ public class WifiAPClient {
 	 * @param context
 	 * @return
 	 */
-	public int isWifiContected(Context context) {
+	private int isWifiContected(Context context) {
 		ConnectivityManager connectivityManager = (ConnectivityManager) context
 				.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo wifiNetworkInfo = connectivityManager
@@ -227,5 +154,148 @@ public class WifiAPClient {
 		intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
 		intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
 		mContext.registerReceiver(mBroadcastReceiver, (intentFilter));
+    }
+    
+	@Override
+	public void initial() {
+		
+	}
+	@Override
+	public void seekPeer() {
+		scanAP();
+	}
+	@Override
+	public void connect() {
+		int type = TYPE_WPA;
+		WifiConfiguration config = new WifiConfiguration();  
+        config.allowedAuthAlgorithms.clear();  
+        config.allowedGroupCiphers.clear();  
+        config.allowedKeyManagement.clear();  
+        config.allowedPairwiseCiphers.clear();  
+        config.allowedProtocols.clear();  
+        config.SSID = "\"" + mTargetName + "\"";  
+  
+        WifiConfiguration tempConfig = this.IsExsits(mTargetName);  
+        if (tempConfig != null) {  
+            mWifiManager.removeNetwork(tempConfig.networkId);  
+        }  
+        // 分为三种情况：1没有密码2用wep加密3用wpa加密  
+        if (type == TYPE_NO_PASSWD) {// WIFICIPHER_NOPASS  
+            config.wepKeys[0] = "";  
+            config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);  
+            config.wepTxKeyIndex = 0;  
+              
+        } else if (type == TYPE_WEP) {  //  WIFICIPHER_WEP   
+            config.hiddenSSID = true;  
+            config.wepKeys[0] = "\"" + mTargetPassword + "\"";  
+            config.allowedAuthAlgorithms  
+                    .set(WifiConfiguration.AuthAlgorithm.SHARED);  
+            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);  
+            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);  
+            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40);  
+            config.allowedGroupCiphers  
+                    .set(WifiConfiguration.GroupCipher.WEP104);  
+            config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);  
+            config.wepTxKeyIndex = 0;  
+        } else if (type == TYPE_WPA) {   // WIFICIPHER_WPA  
+            config.preSharedKey = "\"" + mTargetPassword + "\"";  
+            config.hiddenSSID = true;  
+            config.allowedAuthAlgorithms  
+                    .set(WifiConfiguration.AuthAlgorithm.OPEN);  
+            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);  
+            config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);  
+            config.allowedPairwiseCiphers  
+                    .set(WifiConfiguration.PairwiseCipher.TKIP);  
+            // config.allowedProtocols.set(WifiConfiguration.Protocol.WPA);  
+            config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);  
+            config.allowedPairwiseCiphers  
+                    .set(WifiConfiguration.PairwiseCipher.CCMP);  
+            config.status = WifiConfiguration.Status.ENABLED;  
+        }  
+        
+        int wcgID = mWifiManager.addNetwork(config);  
+        boolean result = mWifiManager.enableNetwork(wcgID, true);  
+        if(result)
+        {
+        	mIsConnecting = true;
+        }
+	}
+	@Override
+	public void timeout() {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void disconnect() {
+		
+	}
+	@Override
+	public void reset() {
+		
+	}
+	@Override
+	public void registerOnStateChangeListener(IOnStateChangeListener listener) {
+		
+	}
+	
+	private void scanAP()
+	{
+        mWifiManager.startScan();  
+	}
+	
+	private void findAP()
+	{
+        List<ScanResult> results = mWifiManager.getScanResults();  
+        for(ScanResult result: results)
+        {
+        	if(result.SSID.equals("tank_test"))
+        	{
+        		if(WifiManager.calculateSignalLevel(result.level, 100) > 60)
+        		{
+        			//connectServer("tank_test", "12345678");
+        			connect();
+        			break;
+        		}
+        	}
+        }		
+	}
+	
+    private WifiConfiguration IsExsits(String SSID) {  
+        List<WifiConfiguration> existingConfigs = mWifiManager.getConfiguredNetworks();  
+        for (WifiConfiguration existingConfig : existingConfigs) {  
+            if (existingConfig.SSID.equals("\"" + SSID + "\"") /*&& existingConfig.preSharedKey.equals("\"" + password + "\"")*/) {  
+                return existingConfig;  
+            }  
+        }  
+        return null;  
+    }  
+    
+    private void createDataTransfer(InetAddress address)
+    {
+		final InetAddress fAddress = address;
+		if (false == mIsClientCreated) {
+			mIsClientCreated = true;
+			Thread t = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					if (null == mDataTransfer) {
+						mDataTransfer = DataTransfer.createClientTransfer(null,fAddress, new IConnectionListener() {
+							
+							@Override
+							public void onDisconnect() {
+								
+							}
+
+							@Override
+							public void onConnect() {
+								// TODO Auto-generated method stub
+								
+							}
+						});
+					}
+				}
+			});
+			t.start();
+		}
     }
 }

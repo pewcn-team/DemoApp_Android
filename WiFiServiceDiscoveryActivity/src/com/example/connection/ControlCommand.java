@@ -1,4 +1,4 @@
-package com.example.android.wifidirect.discovery;
+package com.example.connection;
 
 public class ControlCommand implements ICommand {
 

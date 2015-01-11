@@ -1,5 +1,7 @@
 package com.example.android.wifidirect.discovery;
 
+import com.example.connection.IConnection;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -20,7 +22,7 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
-public class WifiP2PConnection implements IWifiP2PConnection, ConnectionInfoListener, ChannelListener {
+public class WifiP2PConnection implements IConnection, ConnectionInfoListener, ChannelListener {
 	
 	public interface StateChangeListener
 	{
@@ -127,54 +129,52 @@ public class WifiP2PConnection implements IWifiP2PConnection, ConnectionInfoList
 
 	}
 
-	@Override
-	public void connect(WifiP2pDevice device) 
-	{
-		changeState(STATE_CONNECTING);
-        WifiP2pConfig config = new WifiP2pConfig();
-        config.deviceAddress = device.deviceAddress;
-        config.wps.setup = WpsInfo.PBC;
-        mConnectDevice = device;
-        mCurrState = STATE_CONNECTING;
-        mWifiP2pManager.connect(mChannel, config, new ActionListener() {
-
-            @Override
-            public void onSuccess() {
-            }
-
-            @Override
-            public void onFailure(int errorCode) {
-            }
-        });
-        
-		//启动一个定时器，开始计算超时
-		AsyncTask<Void, Void, Void> connectTask = new AsyncTask<Void, Void, Void>() {
-
-			@Override
-			protected Void doInBackground(Void... params) {
-				// TODO Auto-generated method stub
-				try {
-					Thread.sleep(20000);
-
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-				return null;
-			}
-			
-		     protected void onPostExecute(Void param) {
-					if(mCurrState==STATE_CONNECTING)
-					{
-						timeout();
-					}
-		     }
-
-		};
-		connectTask.execute(null, null, null);
-
-	}
+//	@Override
+//	public void connect(WifiP2pDevice device) 
+//	{
+//		changeState(STATE_CONNECTING);
+//        WifiP2pConfig config = new WifiP2pConfig();
+//        config.deviceAddress = device.deviceAddress;
+//        config.wps.setup = WpsInfo.PBC;
+//        mConnectDevice = device;
+//        mCurrState = STATE_CONNECTING;
+//        mWifiP2pManager.connect(mChannel, config, new ActionListener() {
+//
+//            @Override
+//            public void onSuccess() {
+//            }
+//
+//            @Override
+//            public void onFailure(int errorCode) {
+//            }
+//        });
+//        
+//		AsyncTask<Void, Void, Void> connectTask = new AsyncTask<Void, Void, Void>() {
+//
+//			@Override
+//			protected Void doInBackground(Void... params) {
+//				// TODO Auto-generated method stub
+//				try {
+//					Thread.sleep(20000);
+//
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+//
+//				return null;
+//			}
+//			
+//		     protected void onPostExecute(Void param) {
+//					if(mCurrState==STATE_CONNECTING)
+//					{
+//						timeout();
+//					}
+//		     }
+//
+//		};
+//		connectTask.execute(null, null, null);
+//
+//	}
 
 	@Override
 	public void timeout() {
@@ -186,7 +186,7 @@ public class WifiP2PConnection implements IWifiP2PConnection, ConnectionInfoList
 		}
 		else if(mCurrState == STATE_CONNECTING)
 		{
-			connect(mConnectDevice);
+			//connect(mConnectDevice);
 		}
 
 	}
@@ -330,6 +330,18 @@ public class WifiP2PConnection implements IWifiP2PConnection, ConnectionInfoList
 	{
 		mCurrState = state;
 		mStateChangeListener.onStateChanged(mCurrState);
+	}
+
+	@Override
+	public void connect() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void registerOnStateChangeListener(IOnStateChangeListener listener) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 

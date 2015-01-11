@@ -15,6 +15,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.connection.DataTransfer;
+
 /**
  * This fragment handles chat related UI which includes a list view for messages
  * and a message entry field with send button.
