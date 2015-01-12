@@ -45,5 +45,10 @@ public interface IConnection {
 	 * @param listener
 	 */
 	public void registerOnStateChangeListener(IOnStateChangeListener listener);
+	
+	/**注销状态监听器
+	 * @param listener
+	 */
+	public void unregisterOnStateChangeListener(IOnStateChangeListener listener);
 
 }

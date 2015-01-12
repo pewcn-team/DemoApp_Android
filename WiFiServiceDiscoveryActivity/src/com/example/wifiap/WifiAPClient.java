@@ -2,6 +2,7 @@ package com.example.wifiap;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.example.android.wifidirect.discovery.WiFiServiceDiscoveryActivity;
@@ -32,31 +33,22 @@ public class WifiAPClient implements IConnection{
     public static final int WIFI_CONNECTED = 0x01;  
     public static final int WIFI_CONNECT_FAILED = 0x02;  
     public static final int WIFI_CONNECTING = 0x03;  
-    
-	public interface OnConnectListener
-	{
-		public void onConnect(InetAddress address);
-		
-		public void onDisconnect();
-		
-	}
  
     public String TAG = "WifiAPClient";
     private WifiManager mWifiManager;
     private Context mContext;
     private boolean  mIsConnecting =false;
-    private OnConnectListener mListener;
     private boolean mIsConnected = false;
 	private String mTargetName = "tank_test";
 	private String mTargetPassword = "12345678";
 	private DataTransfer mDataTransfer;
 	private boolean mIsClientCreated = false;
-	
-	public WifiAPClient(Context context, OnConnectListener listener)
+	private ArrayList<IConnection.IOnStateChangeListener> mListeners = new ArrayList<IConnection.IOnStateChangeListener>();
+	public WifiAPClient(Context context)
 	{
+
 		mContext = context;
 		mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);  
-		mListener = listener;
 	}
 
     /**地址转换程序
@@ -76,71 +68,39 @@ public class WifiAPClient implements IConnection{
         }
     }
     
-	 private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {  
-		  
-	        @Override  
-	        public void onReceive(Context context, Intent intent) {  
-	            // TODO Auto-generated method stub  
-	            if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {  
-	            	if(!mIsConnecting)
-	            	{
-	            		findAP();
-	            	}
-	            }  
-	            else if(intent.getAction().equals(WifiManager.NETWORK_STATE_CHANGED_ACTION))
-	            {
-	            	NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
-	            	if(info.isConnected())
-	            	{
-	                	WifiInfo winfo = mWifiManager.getConnectionInfo();
-	                	int ip = winfo.getIpAddress();
-	                	InetAddress address = intToInetAddress(ip);
-	                	createDataTransfer(address);
-	                	mIsConnected = true;
-	                	
-	            	}
-	            	else if(mIsConnected == true && (0 == info.getDetailedState().compareTo(NetworkInfo.DetailedState.DISCONNECTING)||0 == info.getDetailedState().compareTo(NetworkInfo.DetailedState.DISCONNECTED)))
-	            	{
-	            		Log.v(TAG, "wifi disconnect!");
-	            		mIsConnected = false;
-	            		mListener.onDisconnect();
-	            	}
-	            	
-	            }
-	        }  
-	    };  
+
 	    
 
-	/**
-	 * 判断wifi是否连接成功,不是network
-	 * 
-	 * @param context
-	 * @return
-	 */
-	private int isWifiContected(Context context) {
-		ConnectivityManager connectivityManager = (ConnectivityManager) context
-				.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo wifiNetworkInfo = connectivityManager
-				.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-
-		Log.v(TAG,
-				"isConnectedOrConnecting = "
-						+ wifiNetworkInfo.isConnectedOrConnecting());
-		Log.d(TAG,
-				"wifiNetworkInfo.getDetailedState() = "
-						+ wifiNetworkInfo.getDetailedState());
-		if (wifiNetworkInfo.getDetailedState() == DetailedState.OBTAINING_IPADDR
-				|| wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTING) {
-			return WIFI_CONNECTING;
-		} else if (wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTED) {
-			return WIFI_CONNECTED;
-		} else {
-			Log.d(TAG,
-					"getDetailedState() == "
-							+ wifiNetworkInfo.getDetailedState());
-			return WIFI_CONNECT_FAILED;
-		}
-	}
+//	/**
+//	 * 判断wifi是否连接成功,不是network
+//	 * 
+//	 * @param context
+//	 * @return
+//	 */
+//	private int isWifiContected(Context context) {
+//		ConnectivityManager connectivityManager = (ConnectivityManager) context
+//				.getSystemService(Context.CONNECTIVITY_SERVICE);
+//		NetworkInfo wifiNetworkInfo = connectivityManager
+//				.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+//
+//		Log.v(TAG,
+//				"isConnectedOrConnecting = "
+//						+ wifiNetworkInfo.isConnectedOrConnecting());
+//		Log.d(TAG,
+//				"wifiNetworkInfo.getDetailedState() = "
+//						+ wifiNetworkInfo.getDetailedState());
+//		if (wifiNetworkInfo.getDetailedState() == DetailedState.OBTAINING_IPADDR
+//				|| wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTING) {
+//			return WIFI_CONNECTING;
+//		} else if (wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTED) {
+//			return WIFI_CONNECTED;
+//		} else {
+//			Log.d(TAG,
+//					"getDetailedState() == "
+//							+ wifiNetworkInfo.getDetailedState());
+//			return WIFI_CONNECT_FAILED;
+//		}
+//	}
   
     public void onPause()
     {
@@ -235,7 +195,25 @@ public class WifiAPClient implements IConnection{
 	}
 	@Override
 	public void registerOnStateChangeListener(IOnStateChangeListener listener) {
+		if(null == listener)
+		{
+			throw new IllegalArgumentException("listener is null!");
+		}
+		mListeners.add(listener);
 		
+	}
+	
+	@Override
+	public void unregisterOnStateChangeListener(IOnStateChangeListener listener) {
+		mListeners.remove(listener);
+	}  
+	
+	private void changeState(IConnection.ConnectionState state)
+	{
+		for(IOnStateChangeListener listener : mListeners)
+		{
+			listener.onStateChange(state);
+		}
 	}
 	
 	private void scanAP()
@@ -252,7 +230,6 @@ public class WifiAPClient implements IConnection{
         	{
         		if(WifiManager.calculateSignalLevel(result.level, 100) > 60)
         		{
-        			//connectServer("tank_test", "12345678");
         			connect();
         			break;
         		}
@@ -283,12 +260,12 @@ public class WifiAPClient implements IConnection{
 							
 							@Override
 							public void onDisconnect() {
-								
+								changeState(ConnectionState.DISCONNECT);
 							}
 
 							@Override
 							public void onConnect() {
-								// TODO Auto-generated method stub
+								changeState(ConnectionState.CONNECTED);
 								
 							}
 						});
@@ -298,4 +275,42 @@ public class WifiAPClient implements IConnection{
 			t.start();
 		}
     }
+    
+	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			// TODO Auto-generated method stub
+			if (intent.getAction().equals(
+					WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+				if (!mIsConnecting) {
+					findAP();
+				}
+			} else if (intent.getAction().equals(
+					WifiManager.NETWORK_STATE_CHANGED_ACTION)) {
+				NetworkInfo info = intent
+						.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+				if (info.isConnected()) {
+					WifiInfo winfo = mWifiManager.getConnectionInfo();
+					int ip = winfo.getIpAddress();
+					InetAddress address = intToInetAddress(ip);
+					createDataTransfer(address);
+					mIsConnected = true;
+
+				} else if (mIsConnected == true
+						&& (0 == info.getDetailedState().compareTo(
+								NetworkInfo.DetailedState.DISCONNECTING) || 0 == info
+								.getDetailedState().compareTo(
+										NetworkInfo.DetailedState.DISCONNECTED))) {
+					Log.v(TAG, "wifi disconnect!");
+					mIsConnected = false;
+					changeState(ConnectionState.DISCONNECT);
+				}
+
+			}
+		}
+	};
+
+	
+	
 }

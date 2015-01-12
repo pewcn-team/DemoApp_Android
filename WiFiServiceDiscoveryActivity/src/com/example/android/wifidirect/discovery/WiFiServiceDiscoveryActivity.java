@@ -42,6 +42,8 @@ import com.example.android.wifidirect.discovery.WifiPeerList.WiFiDevicesAdapter;
 import com.example.connection.ControlFragment;
 import com.example.connection.DataTransfer;
 import com.example.connection.DataTransfer.IConnectionListener;
+import com.example.connection.IConnection.ConnectionState;
+import com.example.connection.IConnection.IOnStateChangeListener;
 import com.example.wifiap.WifiAPClient;
 import com.example.wifiap.WifiAPServer;
 
@@ -497,21 +499,24 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 				e.printStackTrace();
 			}
 			mWifiManager.setWifiEnabled(true);
-			mClient = new WifiAPClient(this,
-					new WifiAPClient.OnConnectListener() {
-
-						@Override
-						public void onConnect(InetAddress address) {
-							
-
-						}
-
-						@Override
-						public void onDisconnect() {
-							disconnect();
-							
-						}
-					});
+			mClient = new WifiAPClient(this, new IOnStateChangeListener() {
+				
+				@Override
+				public void onStateChange(ConnectionState state) {
+					switch(state)
+					{
+					case CONNECTED:
+						createControlFragment();
+						break;
+					case DISCONNECT:
+						break;
+					case TIMEOUT:
+						break;
+					default:
+						break;
+					}
+				}
+			});
 			mClient.initial();
 		}
         else
@@ -598,5 +603,19 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         {
         	mClient.onResume();
         }
+	}
+	
+	private void createControlFragment()
+	{
+		mControlFragment = new ControlFragment(this, mDataTransfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+			@Override
+			public void newStats(String stats) {
+              handler.obtainMessage(WiFiServiceDiscoveryActivity.UPDATE_STATE, stats)
+              .sendToTarget();
+				
+			}
+		}, mDataTransfer, mIsServer);
+    	getFragmentManager().beginTransaction().remove(peerList).commit();
+    	getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commit();  
 	}
 }
