@@ -28,12 +28,8 @@ public class WifiAPClient implements IConnection{
 	
     public static final int TYPE_NO_PASSWD = 0x11;  
     public static final int TYPE_WEP = 0x12;  
-    public static final int TYPE_WPA = 0x13; 
-    
-    public static final int WIFI_CONNECTED = 0x01;  
-    public static final int WIFI_CONNECT_FAILED = 0x02;  
-    public static final int WIFI_CONNECTING = 0x03;  
- 
+    public static final int TYPE_WPA = 0x13;
+
     public String TAG = "WifiAPClient";
     private WifiManager mWifiManager;
     private Context mContext;
@@ -41,12 +37,11 @@ public class WifiAPClient implements IConnection{
     private boolean mIsConnected = false;
 	private String mTargetName = "tank_test";
 	private String mTargetPassword = "12345678";
-	private DataTransfer mDataTransfer;
+	private DataTransfer mDataTransfer = null;
 	private boolean mIsClientCreated = false;
 	private ArrayList<IConnection.IOnStateChangeListener> mListeners = new ArrayList<IConnection.IOnStateChangeListener>();
 	public WifiAPClient(Context context)
 	{
-
 		mContext = context;
 		mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);  
 	}
@@ -67,6 +62,11 @@ public class WifiAPClient implements IConnection{
            throw new AssertionError();
         }
     }
+
+	public DataTransfer getDataTransfer()
+	{
+		return mDataTransfer;
+	}
     
 
 	    
@@ -122,8 +122,9 @@ public class WifiAPClient implements IConnection{
 	}
 	@Override
 	public void seekPeer() {
-		scanAP();
+		mWifiManager.startScan();
 	}
+
 	@Override
 	public void connect() {
 		int type = TYPE_WPA;
@@ -187,7 +188,8 @@ public class WifiAPClient implements IConnection{
 	}
 	@Override
 	public void disconnect() {
-		
+		mDataTransfer.destroy();
+		changeState(ConnectionState.DISCONNECT);
 	}
 	@Override
 	public void reset() {
@@ -205,6 +207,10 @@ public class WifiAPClient implements IConnection{
 	
 	@Override
 	public void unregisterOnStateChangeListener(IOnStateChangeListener listener) {
+		if(null == listener)
+		{
+			throw new IllegalArgumentException("listener is null!");
+		}
 		mListeners.remove(listener);
 	}  
 	
@@ -215,13 +221,9 @@ public class WifiAPClient implements IConnection{
 			listener.onStateChange(state);
 		}
 	}
+
 	
-	private void scanAP()
-	{
-        mWifiManager.startScan();  
-	}
-	
-	private void findAP()
+	private void selectedAP()
 	{
         List<ScanResult> results = mWifiManager.getScanResults();  
         for(ScanResult result: results)
@@ -284,7 +286,7 @@ public class WifiAPClient implements IConnection{
 			if (intent.getAction().equals(
 					WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
 				if (!mIsConnecting) {
-					findAP();
+					selectedAP();
 				}
 			} else if (intent.getAction().equals(
 					WifiManager.NETWORK_STATE_CHANGED_ACTION)) {
@@ -304,7 +306,7 @@ public class WifiAPClient implements IConnection{
 										NetworkInfo.DetailedState.DISCONNECTED))) {
 					Log.v(TAG, "wifi disconnect!");
 					mIsConnected = false;
-					changeState(ConnectionState.DISCONNECT);
+					disconnect();
 				}
 
 			}

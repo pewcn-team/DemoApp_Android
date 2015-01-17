@@ -34,7 +34,6 @@ public class DataTransfer {
 	
     private InputStream mIStream;
     private OutputStream mOStream;
-    private Handler mHandler;
     private ServerSocket mServerSocket = null;
     private Socket mSocket = null;
     private IDataReceiver mDataReceiver = null;
@@ -61,21 +60,18 @@ public class DataTransfer {
 		transfer.mIsServer = false;
 		transfer.mGroupOwnerAddress = groupOwnerAddress;
 		Log.v(WiFiServiceDiscoveryActivity.TAG, "createClientTransfer");
-		transfer.mHandler = handler;
 		transfer.mConnectionListener = listener;
 		transfer.startClientThread();
 		return transfer;
 	}
 	
-	public static DataTransfer createServerTransfer(Handler handler, IDataReceiver dataReceiver, IConnectionListener listener)
+	public static DataTransfer createServerTransfer(Handler handler, IConnectionListener listener)
 	{
 		DataTransfer transfer = null;
 		try {
 			transfer = new DataTransfer();
 			transfer.mIsServer = true;
 			transfer.mServerSocket = new ServerSocket(4545);
-			transfer.mHandler = handler;
-			transfer.mDataReceiver = dataReceiver;
 			transfer.mConnectionListener = listener;
 			Log.v(WiFiServiceDiscoveryActivity.TAG, "createServerTransfer");
 			transfer.startServerThread();
@@ -181,9 +177,6 @@ public class DataTransfer {
     
     public void destroy()
     {
-    	//
-
-
     	try {
     		Log.v(WiFiServiceDiscoveryActivity.TAG, "server_socket close");
     		if(mIsServer)
@@ -220,8 +213,6 @@ public class DataTransfer {
     public void handleSocket()
     {
     	mPeer = mSocket.getInetAddress();
-		mHandler.obtainMessage(WiFiServiceDiscoveryActivity.MY_HANDLE,
-				this).sendToTarget();
 		Log.d(WiFiServiceDiscoveryActivity.TAG, "start loop");
 		try {
 			mIStream = mSocket.getInputStream();
@@ -231,6 +222,8 @@ public class DataTransfer {
 			e1.printStackTrace();
 			return;
 		}
+
+		mConnectionListener.onConnect();
 		byte[] buffer = new byte[1024];
 		int bytes;
 		while (mIsConnected) {

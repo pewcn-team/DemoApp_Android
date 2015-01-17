@@ -343,6 +343,11 @@ public class WifiP2PConnection implements IConnection, ConnectionInfoListener, C
 		// TODO Auto-generated method stub
 		
 	}
-	
+
+	@Override
+	public void unregisterOnStateChangeListener(IOnStateChangeListener listener) {
+
+	}
+
 
 }

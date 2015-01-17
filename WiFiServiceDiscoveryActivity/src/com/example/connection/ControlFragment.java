@@ -43,7 +43,9 @@ public class ControlFragment extends Fragment {
 	private WebRTCLib mWebrtc;
 	private Activity mActivity;
     boolean mIsServer = false;
-    private ControlCommand mCurrControlCommand = null; 
+    private ControlCommand mCurrControlCommand = null;
+	private int mDirection = 0;
+	private MotorPWM mMotorPWM;
 	public ControlFragment(Activity activity, String remoteIP, MediaEngineObserver observer, DataTransfer dataTransfer, boolean isServer)
 	{
 		mActivity = activity;
@@ -70,7 +72,13 @@ public class ControlFragment extends Fragment {
 		});
 		mRemoteIP = remoteIP;
 		mObserver = observer;
-		mIsServer = true;
+		mIsServer = isServer;
+		if(mIsServer)
+		{
+			mMotorPWM = new MotorPWM();
+			mMotorPWM.start();
+		}
+
 		
 	}
 	
@@ -149,27 +157,29 @@ public class ControlFragment extends Fragment {
 			{
 				mBtnUp.setSelected(true);
 				mBtnUp.setBackgroundColor(0xFFFF0000);
-				try {
-					Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
-					Runtime.getRuntime().exec("hwacc w 0xd4019118 0x00000002");
-					Log.v("Control", "Press Forward Button");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//				try {
+//					Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+//					Runtime.getRuntime().exec("hwacc w 0xd4019118 0x00000002");
+//					Log.v("Control", "Press Forward Button");
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+				mMotorPWM.changeLevel(1);
 			}	
 			if(btnIndex == BUTTON_INDEX_DOWN)
 			{
 				mBtnDown.setSelected(true);
 				mBtnDown.setBackgroundColor(0xFFFF0000);
-				try {
-					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
-					Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00002000");
-					Log.v("Control", "Press Back Button");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//				try {
+//					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
+//					Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00002000");
+//					Log.v("Control", "Press Back Button");
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+				mMotorPWM.changeLevel(-1);
 			}
 			if(btnIndex == BUTTON_INDEX_LEFT)
 			{
@@ -204,27 +214,29 @@ public class ControlFragment extends Fragment {
 			{
 				mBtnUp.setSelected(false);
 				mBtnUp.setBackgroundColor(0xFFFFFFFF);
-				try {
-					Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
-					Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00000002");
-					Log.v("Control", "Release Forward Button");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//				try {
+//					Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+//					Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00000002");
+//					Log.v("Control", "Release Forward Button");
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+				mMotorPWM.changeLevel(0);
 			}	
 			if(btnIndex == BUTTON_INDEX_DOWN)
 			{
 				mBtnDown.setSelected(false);
 				mBtnDown.setBackgroundColor(0xFFFFFFFF);
-				try {
-					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
-					Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00002000");
-					Log.v("Control", "Release Back Button");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//				try {
+//					Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
+//					Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00002000");
+//					Log.v("Control", "Release Back Button");
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+				mMotorPWM.changeLevel(0);
 			}
 			if(btnIndex == BUTTON_INDEX_LEFT)
 			{
@@ -305,5 +317,176 @@ public class ControlFragment extends Fragment {
         }
 
     }
+
+
+	private class MotorPWM
+	{
+		int mLevel = 0;
+		public MotorPWM()
+		{
+
+		}
+
+		public void changeLevel(int level)
+		{
+			mLevel = level;
+		}
+
+		public void start()
+		{
+			Runnable engine = new Runnable() {
+				@Override
+				public void run() {
+					while(true)
+					{
+						if(mLevel == 2)
+						{
+							try {
+								Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+								Runtime.getRuntime().exec("hwacc w 0xd4019118 0x00000002");
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+
+						}
+						else if(mLevel == 1)
+						{
+							try {
+								Log.v("Control", "High Pulse");
+								Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+								Runtime.getRuntime().exec("hwacc w 0xd4019118 0x00000002");
+								try {
+									Thread.currentThread().sleep(5);
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+								Log.v("Control", "Low Pulse");
+								Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+								Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00000002");
+								try {
+									Thread.currentThread().sleep(5);
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+						else if(mLevel == 0)
+						{
+							try {
+								Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+								Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00000002");
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+						else if(mLevel == -1)
+						{
+							try {
+								Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
+								Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00002000");
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							try {
+								Thread.currentThread().sleep(500);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+
+							try {
+								Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
+								Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00002000");
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							try {
+								Thread.currentThread().sleep(500);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				}
+			};
+			Thread t= new Thread(engine);
+			t.start();
+
+		}
+
+	}
+
+
+
+
+	private class DirectionPulse
+	{
+		int mDirection;
+		public DirectionPulse(int direction)
+		{
+			mDirection = direction;
+		}
+
+		public void fire()
+		{
+			Runnable mDirPulse = new Runnable() {
+				@Override
+				public void run() {
+					if(mDirection == -1)
+					{
+						try {
+							Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+							Runtime.getRuntime().exec("hwacc w 0xd4019118 0x00000002");
+							try {
+								Thread.currentThread().sleep(500);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+
+							Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+							Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00000002");
+							try {
+								Thread.currentThread().sleep(500);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+					else if(mDirection == 1)
+					{
+						try {
+							Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00010000");
+							Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00010000");
+							try {
+								Thread.currentThread().sleep(500);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+
+							Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00010000");
+							Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00010000");
+							try {
+								Thread.currentThread().sleep(500);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			};
+			mDirPulse.run();
+
+
+		}
+
+	}
+
 
 }
