@@ -3,27 +3,14 @@ package com.example.android.wifidirect.discovery;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.app.KeyguardManager;
-import android.app.KeyguardManager.KeyguardLock;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
-import android.net.wifi.WpsInfo;
-import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
-import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
-import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
-import android.net.wifi.p2p.WifiP2pManager.DnsSdServiceResponseListener;
-import android.net.wifi.p2p.WifiP2pManager.DnsSdTxtRecordListener;
-import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
-import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.os.Bundle;
 import android.os.Handler;
@@ -31,16 +18,15 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.View;
+import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
 import com.example.android.wifidirect.discovery.WifiP2PConnection.StateChangeListener;
 import com.example.android.wifidirect.discovery.WifiPeerList.DeviceClickListener;
 import com.example.android.wifidirect.discovery.WifiPeerList.WiFiDevicesAdapter;
-import com.example.connection.ControlFragment;
+import com.example.app.ControlFragmentCar;
 import com.example.connection.DataTransfer;
 import com.example.connection.DataTransfer.IConnectionListener;
 import com.example.connection.IConnection.ConnectionState;
@@ -48,13 +34,12 @@ import com.example.connection.IConnection.IOnStateChangeListener;
 import com.example.wifiap.WifiAPClient;
 import com.example.wifiap.WifiAPServer;
 import com.example.connection.IConnection;
-import java.io.IOException;
-import java.net.InetAddress;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import org.webrtc.webrtcdemo.MediaEngineObserver;
-import android.view.WindowManager.LayoutParams;
+
 /**
  * The main activity for the sample. This activity registers a local service and
  * perform discovery over Wi-Fi p2p network. It also hosts a couple of fragments
@@ -67,10 +52,8 @@ import android.view.WindowManager.LayoutParams;
  * the interface and messaging needs for a chat session.
  */
 public class WiFiServiceDiscoveryActivity extends Activity implements
-        DeviceClickListener, Handler.Callback, MessageTarget
-        {
-	
-	
+        DeviceClickListener {
+
 
     public static final String TAG = "wifidirectdemo";
 
@@ -83,7 +66,9 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     public static final int MY_HANDLE = 0x400 + 2;
     public static final int UPDATE_STATE = 0x400 + 3;
 
-    
+    public static final String TYPE_CAR = "car";
+    public static final String TYPE_TANK = "tank";
+
     private WifiP2pManager mP2pmanager;
 
     static final int SERVER_PORT = 4545;
@@ -93,12 +78,11 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     private WiFiDirectBroadcastReceiver receiver = null;
     private WifiP2pDnsSdServiceRequest serviceRequest;
 
-    private Handler handler = new Handler(this);
     private WiFiChatFragment chatFragment;
     //private WiFiDirectServicesList servicesList;
     private WifiPeerList peerList;
     private WebRTCFragment webRTCFragment;
-    
+
     private TextView statusTxtView;
     private boolean hasPeer = false;
     private WifiP2PConnection mConnection;
@@ -108,21 +92,17 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     private WifiAPServer mServer = null;
     private WifiAPClient mClient = null;
     private PowerManager.WakeLock mWakeLock = null;
-    private ControlFragment mControlFragment = null;
-    public Handler getHandler() {
-        return handler;
-    }
+    private ControlFragmentCar mControlFragment = null;
+    private String mVehicleType;
 
-    public void setHandler(Handler handler) {
-        this.handler = handler;
-    }
-
-    /** Called when the activity is first created. */
+    /**
+     * Called when the activity is first created.
+     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.v(TAG, "onCreate");
-        getWindow().addFlags(LayoutParams.FLAG_TURN_SCREEN_ON|LayoutParams.FLAG_DISMISS_KEYGUARD|LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(LayoutParams.FLAG_TURN_SCREEN_ON | LayoutParams.FLAG_DISMISS_KEYGUARD | LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
         init();
         statusTxtView = (TextView) findViewById(R.id.status_text);
@@ -134,7 +114,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 
     @Override
     protected void onRestart() {
-    	Log.v(TAG, "onRestart");
+        Log.v(TAG, "onRestart");
         Fragment frag = getFragmentManager().findFragmentByTag("services");
         if (frag != null) {
             getFragmentManager().beginTransaction().remove(frag).commit();
@@ -145,10 +125,9 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     @Override
     protected void onStop() {
 
-		if(getFragmentManager().findFragmentByTag("control") != null)
-		{
-			getFragmentManager().beginTransaction().remove(mControlFragment).commit();
-		}
+        if (getFragmentManager().findFragmentByTag("control") != null) {
+            getFragmentManager().beginTransaction().remove(mControlFragment).commit();
+        }
         super.onStop();
         //System.exit(10);
     }
@@ -261,11 +240,11 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 //            }
 //        });
 
-			
 
     }
 
     WifiP2pDevice mDevice;
+
     @Override
     public void connectP2p(WifiP2pDevice device) {
 //    	mDevice = device;
@@ -300,7 +279,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 //    	mConnection.connect(device);
     }
 
-    @Override
+/*    @Override
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
             case MESSAGE_READ:
@@ -317,44 +296,36 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 
         }
         return true;
-    }
+    }*/
 
     @Override
     public void onResume() {
         super.onResume();
-        if(null == mWakeLock)
-        {
-            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);  
-            mWakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, this.getClass().getCanonicalName());  
-            mWakeLock.acquire();         	
+        if (null == mWakeLock) {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            getWindow().addFlags(LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
 
-        if(mIsServer)
-        {
-        	mServer.onResume();
-        }
-        else
-        {
-        	mClient.onResume();
+        if (mIsServer) {
+            mServer.onResume();
+        } else {
+            mClient.onResume();
         }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        if (mWakeLock !=null&& mWakeLock.isHeld()) {  
-            mWakeLock.release();  
-            mWakeLock =null;  
-        }    
-        if(mIsServer)
-        {
-        	 mServer.onPause();
+        if (mWakeLock != null && mWakeLock.isHeld()) {
+            mWakeLock.release();
+            mWakeLock = null;
         }
-        else
-        {
-        	mClient.onPause();
+        if (mIsServer) {
+            mServer.onPause();
+        } else {
+            mClient.onPause();
         }
-       
+
     }
 
 
@@ -364,9 +335,8 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event)  {
-        if(keyCode == KeyEvent.KEYCODE_BACK)
-        {
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
             System.exit(0);
             return true;
         }
@@ -374,10 +344,8 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     }
 
 
-    private void showAvailablePeers(WifiP2pDeviceList peers)
-    {
-    	if(null != peers)
-    	{
+    private void showAvailablePeers(WifiP2pDeviceList peers) {
+        if (null != peers) {
             WifiPeerList fragment = (WifiPeerList) getFragmentManager()
                     .findFragmentByTag("services");
             if (fragment != null) {
@@ -387,146 +355,123 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
                 adapter.addAll(peers.getDeviceList());
                 adapter.notifyDataSetChanged();
             }
-    	}
+        }
     }
-    
-    private void displayState(String message)
-    {
-    	statusTxtView.setText(message);
+
+    private void displayState(String message) {
+        statusTxtView.setText(message);
     }
-    
+
     @Deprecated
-    private void initWifiP2P()
-    {
-      intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
-      intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-      intentFilter
-              .addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-      intentFilter
-              .addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+    private void initWifiP2P() {
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+        intentFilter
+                .addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
+        intentFilter
+                .addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
 
-      mP2pmanager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
-      channel = mP2pmanager.initialize(this, getMainLooper(), mConnection);
-      
-      startRegistrationAndDiscovery();
-      
-    mConnection = new WifiP2PConnection(mP2pmanager, channel, mWifiManager, (WiFiDirectBroadcastReceiver) receiver);
-    mConnection.setStateChangeListener(new StateChangeListener() {
-		
-		@Override
-		public void onStateChanged(int state) {
-			switch(state)
-			{
-			case WifiP2PConnection.STATE_INIT:
-				displayState("initial.....");
-				break;
-			case WifiP2PConnection.STATE_READY:
-				displayState("ready......");
-		        mConnection.seekPeer();
-		        break;
-			case WifiP2PConnection.STATE_SEEKPEER:
-				displayState("seeking available peers....");
-				break;
-			case WifiP2PConnection.STATE_FOUNDPEER:
-				displayState("found available peers");
-				WifiP2pDeviceList peers = mConnection.getAvailablePeers();
-				showAvailablePeers(peers);
-				break;
-			case WifiP2PConnection.STATE_CONNECTING:
-				displayState("connecting......");
-				break;
-			case WifiP2PConnection.STATE_CONNECTED:
-				WifiP2pInfo info = mConnection.getWifiP2pInfo();
-				displayState("connected......");
-		        if (info.isGroupOwner) {
-		            Log.d(TAG, "Connected as group owner");
-		            mIsServer = true;
-//		            mDataTransfer = DataTransfer.createServerTransfer(((MessageTarget)WiFiServiceDiscoveryActivity.this).getHandler(), new DataTransfer.IDataReceiver() {
-//						
-//						@Override
-//						public void onReceiveData(byte[] data) {
-//							// TODO Auto-generated method stub
-//			                final String readMessage = new String(data);
-//			                Log.d(TAG, readMessage);
-//			                runOnUiThread(new Runnable() {
-//								@Override
-//								public void run() {
-//									(chatFragment).pushMessage("Buddy: " + readMessage);							
-//								}
-//							});				
-//						}
-//					});
-		        } else {
-		            Log.d(TAG, "Connected as peer");
-		            mIsServer = false;
-		           // mDataTransfer = DataTransfer.createClientTransfer(((MessageTarget)WiFiServiceDiscoveryActivity.this).getHandler(), info.groupOwnerAddress);
-		        }
-				break;	
-			case WifiP2PConnection.STATE_TIMEOUT:
-				displayState("time out");
-				break;
-			case WifiP2PConnection.STATE_DISCONNECT:
-				displayState("disconnect");
-				break;
-			}
-		}
-	});
-    
-    mConnection.initial();
+        mP2pmanager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+        channel = mP2pmanager.initialize(this, getMainLooper(), mConnection);
+
+        startRegistrationAndDiscovery();
+
+        mConnection = new WifiP2PConnection(mP2pmanager, channel, mWifiManager, (WiFiDirectBroadcastReceiver) receiver);
+        mConnection.setStateChangeListener(new StateChangeListener() {
+
+            @Override
+            public void onStateChanged(int state) {
+                switch (state) {
+                    case WifiP2PConnection.STATE_INIT:
+                        displayState("initial.....");
+                        break;
+                    case WifiP2PConnection.STATE_READY:
+                        displayState("ready......");
+                        mConnection.seekPeer();
+                        break;
+                    case WifiP2PConnection.STATE_SEEKPEER:
+                        displayState("seeking available peers....");
+                        break;
+                    case WifiP2PConnection.STATE_FOUNDPEER:
+                        displayState("found available peers");
+                        WifiP2pDeviceList peers = mConnection.getAvailablePeers();
+                        showAvailablePeers(peers);
+                        break;
+                    case WifiP2PConnection.STATE_CONNECTING:
+                        displayState("connecting......");
+                        break;
+                    case WifiP2PConnection.STATE_CONNECTED:
+                        WifiP2pInfo info = mConnection.getWifiP2pInfo();
+                        displayState("connected......");
+                        if (info.isGroupOwner) {
+                            Log.d(TAG, "Connected as group owner");
+                            mIsServer = true;
+                        } else {
+                            Log.d(TAG, "Connected as peer");
+                            mIsServer = false;
+                            // mDataTransfer = DataTransfer.createClientTransfer(((MessageTarget)WiFiServiceDiscoveryActivity.this).getHandler(), info.groupOwnerAddress);
+                        }
+                        break;
+                    case WifiP2PConnection.STATE_TIMEOUT:
+                        displayState("time out");
+                        break;
+                    case WifiP2PConnection.STATE_DISCONNECT:
+                        displayState("disconnect");
+                        break;
+                }
+            }
+        });
+
+        mConnection.initial();
     }
-    
-    private void init()
-    {
-    	mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        mIsServer = true;
-		if (!mIsServer) {
-			mWifiManager.setWifiEnabled(false);
-        	try {
-				Thread.currentThread().sleep(2000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			mWifiManager.setWifiEnabled(true);
-			mClient = new WifiAPClient(this);
-            mClient.registerOnStateChangeListener(new IConnection.IOnStateChangeListener() {
-				
-				@Override
-				public void onStateChange(ConnectionState state) {
-					switch(state)
-					{
-					case CONNECTED:
-						createControlFragment();
-						break;
-					case DISCONNECT:
-						break;
-					case TIMEOUT:
-						break;
-					default:
-						break;
-					}
-				}
-			});
-			mClient.initial();
-            mClient.seekPeer();
-		}
-        else
-        {
 
-        	mWifiManager.setWifiEnabled(true);
-        	try {
-				Thread.currentThread().sleep(2000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-        	mWifiManager.setWifiEnabled(false);
-        	mServer = new WifiAPServer(this);
+    private void init() {
+        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        mIsServer = true;
+        if (!mIsServer) {
+            mWifiManager.setWifiEnabled(false);
+            try {
+                Thread.currentThread().sleep(2000);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            mWifiManager.setWifiEnabled(true);
+            mClient = new WifiAPClient(this);
+            mClient.registerOnStateChangeListener(new IConnection.IOnStateChangeListener() {
+
+                @Override
+                public void onStateChange(ConnectionState state) {
+                    switch (state) {
+                        case CONNECTED:
+                            createControlFragment();
+                            break;
+                        case DISCONNECT:
+                            break;
+                        case TIMEOUT:
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            });
+            mClient.initial();
+            mClient.seekPeer();
+        } else {
+
+            mWifiManager.setWifiEnabled(true);
+            try {
+                Thread.currentThread().sleep(2000);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            mWifiManager.setWifiEnabled(false);
+            mServer = new WifiAPServer(this);
             mServer.registerOnStateChangeListener(new IOnStateChangeListener() {
                 @Override
                 public void onStateChange(ConnectionState state) {
-                    switch(state)
-                    {
+                    switch (state) {
                         case CONNECTED:
                             createControlFragment();
                             break;
@@ -541,65 +486,55 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             });
             mServer.initial();
             mServer.seekPeer();
-			
-		}
+
+        }
     }
-    
+
     DataTransfer.IConnectionListener mConnectionListener = new IConnectionListener() {
-		
-		@Override
-		public void onDisconnect() {
-			disconnect();
-		}
 
-		@Override
-		public void onConnect() {
-			// TODO Auto-generated method stub
-			
-		}
-	};
-	
-	private void disconnect()
-	{
-		if(getFragmentManager().findFragmentByTag("control") != null)
-		{
-			getFragmentManager().beginTransaction().remove(mControlFragment).commit();
-		}
+        @Override
+        public void onDisconnect() {
+            disconnect();
+        }
 
-		mServer.onPause();
-		init();	
-		
-        if(mIsServer)
-        {
-        	mServer.onResume();
+        @Override
+        public void onConnect() {
+            // TODO Auto-generated method stub
+
         }
-        else
-        {
-        	mClient.onResume();
+    };
+
+    private void disconnect() {
+        if (getFragmentManager().findFragmentByTag("control") != null) {
+            getFragmentManager().beginTransaction().remove(mControlFragment).commit();
         }
-	}
-	
-	private void createControlFragment()
-	{
+
+        mServer.onPause();
+        init();
+
+        if (mIsServer) {
+            mServer.onResume();
+        } else {
+            mClient.onResume();
+        }
+    }
+
+    private void createControlFragment() {
         DataTransfer transfer = null;
-        if(mIsServer)
-        {
+        if (mIsServer) {
             transfer = mServer.getDataTransfer();
-        }
-        else
-        {
+        } else {
             transfer = mClient.getDataTransfer();
         }
 
-		mControlFragment = new ControlFragment(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
-			@Override
-			public void newStats(String stats) {
-              handler.obtainMessage(WiFiServiceDiscoveryActivity.UPDATE_STATE, stats)
-              .sendToTarget();
-				
-			}
-		}, transfer, mIsServer);
-    	getFragmentManager().beginTransaction().remove(peerList).commit();
-    	getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commit();  
-	}
+        mControlFragment = new ControlFragmentCar(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+            @Override
+            public void newStats(String stats) {
+
+
+            }
+        }, transfer, mIsServer);
+        getFragmentManager().beginTransaction().remove(peerList).commit();
+        getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commit();
+    }
 }

@@ -2,9 +2,9 @@ package com.example.connection;
 
 public class ControlCommand implements ICommand {
 
-	byte mType = 0;
-	byte mDirection;
-	byte mState;
+	public byte mType = 0;
+	public byte mDirection;
+	public byte mState;
 	@Override
 	public byte[] toBytes() {
 		// TODO Auto-generated method stub

@@ -5,5 +5,7 @@
     <string name="btn_send">Send</string>
     <string name="txt_hint">Type Message</string>
     <string name="app_name">Wi-Fi Discovery</string>
+    <string name="connect_tank">连接坦克</string>
+    <string name="connect_car">连接小车</string>
 
 </resources>
