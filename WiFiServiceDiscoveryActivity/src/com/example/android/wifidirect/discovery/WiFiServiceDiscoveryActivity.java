@@ -18,8 +18,10 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
@@ -27,6 +29,7 @@ import com.example.android.wifidirect.discovery.WifiP2PConnection.StateChangeLis
 import com.example.android.wifidirect.discovery.WifiPeerList.DeviceClickListener;
 import com.example.android.wifidirect.discovery.WifiPeerList.WiFiDevicesAdapter;
 import com.example.app.ControlFragmentCar;
+import com.example.app.ControlFragmentTank;
 import com.example.connection.DataTransfer;
 import com.example.connection.DataTransfer.IConnectionListener;
 import com.example.connection.IConnection.ConnectionState;
@@ -92,8 +95,10 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     private WifiAPServer mServer = null;
     private WifiAPClient mClient = null;
     private PowerManager.WakeLock mWakeLock = null;
-    private ControlFragmentCar mControlFragment = null;
-    private String mVehicleType;
+    private Fragment mControlFragment = null;
+    private String mVehicleType = "car";
+    private Button mBtnTank;
+    private Button mBtnCar;
 
     /**
      * Called when the activity is first created.
@@ -101,14 +106,36 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mIsServer = false;
         Log.v(TAG, "onCreate");
         getWindow().addFlags(LayoutParams.FLAG_TURN_SCREEN_ON | LayoutParams.FLAG_DISMISS_KEYGUARD | LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
-        init();
+
         statusTxtView = (TextView) findViewById(R.id.status_text);
         peerList = new WifiPeerList();
         getFragmentManager().beginTransaction()
                 .add(R.id.container_root, peerList, "services").commit();
+        mBtnTank = (Button)findViewById(R.id.button_tank);
+        mBtnTank.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVehicleType = "tank";
+                init();
+            }
+        });
+
+        mBtnCar = (Button)findViewById(R.id.button_car);
+        mBtnCar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVehicleType = "car";
+                init();
+            }
+        });
+        if(mIsServer)
+        {
+            init();
+        }
 
     }
 
@@ -307,9 +334,16 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         }
 
         if (mIsServer) {
-            mServer.onResume();
+            if(mServer != null)
+            {
+                mServer.onResume();
+            }
         } else {
-            mClient.onResume();
+            if(mClient != null)
+            {
+                mClient.onResume();
+            }
+
         }
     }
 
@@ -321,9 +355,15 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             mWakeLock = null;
         }
         if (mIsServer) {
-            mServer.onPause();
+            if(mServer != null)
+            {
+                mServer.onPause();
+            }
         } else {
-            mClient.onPause();
+            if(mClient != null)
+            {
+                mClient.onPause();
+            }
         }
 
     }
@@ -427,7 +467,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 
     private void init() {
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        mIsServer = true;
+
         if (!mIsServer) {
             mWifiManager.setWifiEnabled(false);
             try {
@@ -457,6 +497,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             });
             mClient.initial();
             mClient.seekPeer();
+            mClient.onResume();
         } else {
 
             mWifiManager.setWifiEnabled(true);
@@ -526,14 +567,27 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         } else {
             transfer = mClient.getDataTransfer();
         }
+        if(mVehicleType.equals("car"))
+        {
+            mControlFragment = new ControlFragmentCar(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+                @Override
+                public void newStats(String stats) {
 
-        mControlFragment = new ControlFragmentCar(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
-            @Override
-            public void newStats(String stats) {
+
+                }
+            }, transfer, mIsServer);
+        }
+        else if(mVehicleType.equals("tank"))
+        {
+            mControlFragment = new ControlFragmentTank(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+                @Override
+                public void newStats(String stats) {
 
 
-            }
-        }, transfer, mIsServer);
+                }
+            }, transfer, mIsServer);
+        }
+
         getFragmentManager().beginTransaction().remove(peerList).commit();
         getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commit();
     }
