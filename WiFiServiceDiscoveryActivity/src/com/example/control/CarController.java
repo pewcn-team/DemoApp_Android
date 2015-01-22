@@ -112,8 +112,11 @@ public class CarController {
                             try {
                                 Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
                                 Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00000002");
+<<<<<<< HEAD
                                 Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00002000");
                                 Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00002000");
+=======
+>>>>>>> b5590c65e57045aad8b6702e31937618270f1eb7
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -171,16 +174,25 @@ public class CarController {
                 public void run() {
                     if(mDirection == -1)
                     {
+<<<<<<< HEAD
                         Log.v("Control", "left pulse");
                         try {
                             Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00020000");
                             Runtime.getRuntime().exec("hwacc w 0xd4019118 0x00020000");
                             try {
                                 Thread.currentThread().sleep(1000);
+=======
+                        try {
+                            Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+                            Runtime.getRuntime().exec("hwacc w 0xd4019118 0x00000002");
+                            try {
+                                Thread.currentThread().sleep(500);
+>>>>>>> b5590c65e57045aad8b6702e31937618270f1eb7
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
 
+<<<<<<< HEAD
 /*                            Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00020000");
                             Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00020000");
                             try {
@@ -188,22 +200,39 @@ public class CarController {
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }*/
+=======
+                            Runtime.getRuntime().exec("hwacc w 0xd4019154 0x00000002");
+                            Runtime.getRuntime().exec("hwacc w 0xd4019124 0x00000002");
+                            try {
+                                Thread.currentThread().sleep(500);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+>>>>>>> b5590c65e57045aad8b6702e31937618270f1eb7
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
                     else if(mDirection == 1)
                     {
+<<<<<<< HEAD
                         Log.v("Control", "right pulse");
+=======
+>>>>>>> b5590c65e57045aad8b6702e31937618270f1eb7
                         try {
                             Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00010000");
                             Runtime.getRuntime().exec("hwacc w 0xd4019018 0x00010000");
                             try {
+<<<<<<< HEAD
                                 Thread.currentThread().sleep(1000);
+=======
+                                Thread.currentThread().sleep(500);
+>>>>>>> b5590c65e57045aad8b6702e31937618270f1eb7
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
 
+<<<<<<< HEAD
 /*                            Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00010000");
                             Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00010000");
                             try {
@@ -211,6 +240,15 @@ public class CarController {
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }*/
+=======
+                            Runtime.getRuntime().exec("hwacc w 0xd4019054 0x00010000");
+                            Runtime.getRuntime().exec("hwacc w 0xd4019024 0x00010000");
+                            try {
+                                Thread.currentThread().sleep(500);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+>>>>>>> b5590c65e57045aad8b6702e31937618270f1eb7
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
