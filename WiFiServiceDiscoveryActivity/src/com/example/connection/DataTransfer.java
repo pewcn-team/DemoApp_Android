@@ -36,7 +36,6 @@ public class DataTransfer {
     private OutputStream mOStream;
     private ServerSocket mServerSocket = null;
     private Socket mSocket = null;
-    private IDataReceiver mDataReceiver = null;
     private Boolean mIsServer = false;
     private InetAddress mGroupOwnerAddress;
     private ArrayList<IDataReceiver> mDataReceiverList = new ArrayList<IDataReceiver>();
@@ -210,7 +209,7 @@ public class DataTransfer {
     	mIsConnected = false;
     }
     
-    public void handleSocket()
+    private void handleSocket()
     {
     	mPeer = mSocket.getInetAddress();
 		Log.d(WiFiServiceDiscoveryActivity.TAG, "start loop");

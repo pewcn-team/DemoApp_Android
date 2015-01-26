@@ -2,6 +2,7 @@ package service;
 
 
 import com.example.android.wifidirect.discovery.WiFiServiceDiscoveryActivity;
+import com.example.wifiap.WifiAPServer;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -11,13 +12,13 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-public class MyService extends Service {
+public class ServerService extends Service {
 
 	public class LocalService extends Binder
 	{
-		public MyService getService()
+		public ServerService getService()
 		{
-			return MyService.this;
+			return ServerService.this;
 		}
 	}
 	
@@ -28,7 +29,7 @@ public class MyService extends Service {
         	Log.v("wifidirectdemo", "receive stop");
         	if(intent.getAction().equals("stop"))
         	{
-        		Intent newIntent =new Intent(MyService.this, WiFiServiceDiscoveryActivity.class);
+        		Intent newIntent =new Intent(ServerService.this, WiFiServiceDiscoveryActivity.class);
         		startActivity(newIntent);      		
         	}
         }
@@ -54,6 +55,13 @@ public class MyService extends Service {
 		unregisterReceiver(mBroadcastReceiver);
 		super.onDestroy();
 	}
+	
+	public WifiAPServer getServer()
+	{
+		return #
+	}
+	
+	
 	
 	
 	

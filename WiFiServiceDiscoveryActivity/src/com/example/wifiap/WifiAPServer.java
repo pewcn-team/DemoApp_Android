@@ -144,6 +144,16 @@ public class WifiAPServer implements IConnection {
         }
         mListeners.remove(listener);
     }
+    
+    public void sendData(byte[] data)
+    {
+    	#
+    }
+    
+    public void registerDataReceiver(DataTransfer.IDataReceiver dataReceiver)
+    {
+    	#
+    }
 
     /**
      * 判断wifi是否连接成功,不是network

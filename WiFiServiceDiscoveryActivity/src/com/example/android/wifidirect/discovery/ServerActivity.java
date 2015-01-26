@@ -13,7 +13,7 @@ import android.view.View;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
 
-public class NewActivity extends Activity {
+public class ServerActivity extends Activity {
 
     private Fragment mControlFragment = null;
     @Override

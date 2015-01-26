@@ -44,7 +44,7 @@ import java.util.Map;
 
 import org.webrtc.webrtcdemo.MediaEngineObserver;
 
-import service.MyService;
+import service.ServerService;
 
 /**
  * The main activity for the sample. This activity registers a local service and
@@ -474,7 +474,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     }
 
     private void init() {
-		Intent intent = new Intent(this, MyService.class);
+		Intent intent = new Intent(this, ServerService.class);
 		startService(intent);		
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
@@ -604,7 +604,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     	   Intent intent = new Intent();
     	   intent.putExtra("isServer", true);
     	   intent.putExtra("address", transfer.getPeerAddress().getHostAddress());
-    	   intent.setClass(this, NewActivity.class);
+    	   intent.setClass(this, ServerActivity.class);
     	   startActivity(intent);
        }
        else
