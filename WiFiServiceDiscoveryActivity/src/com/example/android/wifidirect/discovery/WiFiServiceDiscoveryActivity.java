@@ -4,6 +4,7 @@ package com.example.android.wifidirect.discovery;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pDevice;
@@ -42,6 +43,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.webrtc.webrtcdemo.MediaEngineObserver;
+
+import service.MyService;
 
 /**
  * The main activity for the sample. This activity registers a local service and
@@ -83,7 +86,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 
     private WiFiChatFragment chatFragment;
     //private WiFiDirectServicesList servicesList;
-    private WifiPeerList peerList;
+ //   private WifiPeerList peerList;
     private WebRTCFragment webRTCFragment;
 
     private TextView statusTxtView;
@@ -112,9 +115,9 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         setContentView(R.layout.main);
 
         statusTxtView = (TextView) findViewById(R.id.status_text);
-        peerList = new WifiPeerList();
-        getFragmentManager().beginTransaction()
-                .add(R.id.container_root, peerList, "services").commit();
+       // peerList = new WifiPeerList();
+//        getFragmentManager().beginTransaction()
+//                .add(R.id.container_root, peerList, "services").commit();
         mBtnTank = (Button)findViewById(R.id.button_tank);
         mBtnTank.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -152,10 +155,14 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     @Override
     protected void onStop() {
 
+    	Log.v(TAG, "onStop");
+    	Intent intent = new Intent("stop");
+    	sendBroadcast(intent);
         if (getFragmentManager().findFragmentByTag("control") != null) {
-            getFragmentManager().beginTransaction().remove(mControlFragment).commit();
+            getFragmentManager().beginTransaction().remove(mControlFragment).commitAllowingStateLoss();
         }
         super.onStop();
+        
         //System.exit(10);
     }
 
@@ -327,6 +334,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 
     @Override
     public void onResume() {
+    	Log.v(TAG, "onResume");
         super.onResume();
         if (null == mWakeLock) {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -357,7 +365,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         if (mIsServer) {
             if(mServer != null)
             {
-                mServer.onPause();
+                //mServer.onPause();
             }
         } else {
             if(mClient != null)
@@ -466,6 +474,8 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     }
 
     private void init() {
+		Intent intent = new Intent(this, MyService.class);
+		startService(intent);		
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
         if (!mIsServer) {
@@ -500,6 +510,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             mClient.onResume();
         } else {
 
+        	//重置Wifi状态
             mWifiManager.setWifiEnabled(true);
             try {
                 Thread.currentThread().sleep(2000);
@@ -531,20 +542,6 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         }
     }
 
-    DataTransfer.IConnectionListener mConnectionListener = new IConnectionListener() {
-
-        @Override
-        public void onDisconnect() {
-            disconnect();
-        }
-
-        @Override
-        public void onConnect() {
-            // TODO Auto-generated method stub
-
-        }
-    };
-
     private void disconnect() {
         if (getFragmentManager().findFragmentByTag("control") != null) {
             getFragmentManager().beginTransaction().remove(mControlFragment).commit();
@@ -566,29 +563,55 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             transfer = mServer.getDataTransfer();
         } else {
             transfer = mClient.getDataTransfer();
+            if(mVehicleType.equals("car"))
+            {
+                mControlFragment = new ControlFragmentCar(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+                    @Override
+                    public void newStats(String stats) {
+
+
+                    }
+                }, transfer, mIsServer);
+            }
+            else if(mVehicleType.equals("tank"))
+            {
+                mControlFragment = new ControlFragmentTank(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+                    @Override
+                    public void newStats(String stats) {
+
+
+                    }
+                }, transfer, mIsServer);
+            }
         }
-        if(mVehicleType.equals("car"))
-        {
-            mControlFragment = new ControlFragmentCar(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
-                @Override
-                public void newStats(String stats) {
+        
 
 
-                }
-            }, transfer, mIsServer);
-        }
-        else if(mVehicleType.equals("tank"))
-        {
-            mControlFragment = new ControlFragmentTank(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
-                @Override
-                public void newStats(String stats) {
+        this.runOnUiThread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+		        mBtnCar.setVisibility(View.GONE);
+		        mBtnTank.setVisibility(View.GONE);				
+			}
+		});
 
-
-                }
-            }, transfer, mIsServer);
-        }
-
-        getFragmentManager().beginTransaction().remove(peerList).commit();
-        getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commit();
+        //getFragmentManager().beginTransaction().remove(peerList).commitAllowingStateLoss();
+       if(mIsServer)
+       {
+    	 //由于该Activity会被stop掉，导致报Activity has been destroy 的错误，所以另外拉起一个Activity。
+    	   Intent intent = new Intent();
+    	   intent.putExtra("isServer", true);
+    	   intent.putExtra("address", transfer.getPeerAddress().getHostAddress());
+    	   intent.setClass(this, NewActivity.class);
+    	   startActivity(intent);
+       }
+       else
+       {
+    	   
+    	   getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commitAllowingStateLoss();
+       }
+        
     }
 }

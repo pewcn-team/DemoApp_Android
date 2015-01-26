@@ -32,6 +32,9 @@ public class WifiAPServer implements IConnection {
     public static final int WIFI_CONNECTING = 0x03;
     private ArrayList<IOnStateChangeListener> mListeners = new ArrayList<IConnection.IOnStateChangeListener>();
 
+    public static WifiAPServer mInstance= null;
+    
+    
     @Override
     public void initial() {
         /**
@@ -103,6 +106,7 @@ public class WifiAPServer implements IConnection {
 
     public DataTransfer getDataTransfer()
     {
+    	 mInstance = this;
         return mDataTransfer;
     }
 
@@ -110,6 +114,7 @@ public class WifiAPServer implements IConnection {
     public WifiAPServer(Context context) {
         mContext = context;
         mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+       
     }
 
 

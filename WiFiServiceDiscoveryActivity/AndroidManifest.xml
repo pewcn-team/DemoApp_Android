@@ -43,8 +43,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
+        <service android:name="com.example.android.wifidirect.service.MyService" />
         <uses-library android:name="android.test.runner" />
+        <activity android:name="NewActivity" android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="landscape"></activity>
     </application>
 
 </manifest>
