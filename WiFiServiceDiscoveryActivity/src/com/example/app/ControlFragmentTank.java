@@ -9,11 +9,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+
 import com.example.android.wifidirect.discovery.R;
 import com.example.connection.ControlCommand;
 import com.example.connection.DataTransfer;
 import com.example.connection.DataTransfer.IDataReceiver;
 import com.example.control.TankController;
+import com.example.wifiap.WifiAPBase;
+
 import org.webrtc.webrtcdemo.MediaEngineObserver;
 import org.webrtc.webrtcdemo.WebRTCLib;
 
@@ -41,16 +44,16 @@ public class ControlFragmentTank extends Fragment {
     private ControlCommand mCurrControlCommand = null;
 	private int mDirection = 0;
 	private TankController mController = null;
-
+	private WifiAPBase mWifiAP;
 	public ControlFragmentTank()
 	{
 	}
 
-	public ControlFragmentTank(Activity activity, String remoteIP, MediaEngineObserver observer, DataTransfer dataTransfer, boolean isServer)
+	public ControlFragmentTank(Activity activity, String remoteIP, MediaEngineObserver observer, WifiAPBase wifiAP, boolean isServer)
 	{
 		mActivity = activity;
-		mDataTransfer = dataTransfer;
-		mDataTransfer.registerDataReceiver(new IDataReceiver() {
+		mWifiAP = wifiAP;
+		mWifiAP.registerDataReceiver(new IDataReceiver() {
 			
 			@Override
 			public void onReceiveData(byte[] data) {

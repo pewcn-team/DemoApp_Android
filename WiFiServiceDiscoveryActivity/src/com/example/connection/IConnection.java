@@ -41,6 +41,8 @@ public interface IConnection {
 	 */
 	public void reset();
 	
+	public void destroy();
+	
 	/**注册状态监听器
 	 * @param listener
 	 */

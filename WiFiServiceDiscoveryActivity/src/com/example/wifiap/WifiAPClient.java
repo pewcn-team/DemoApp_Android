@@ -24,7 +24,7 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 
-public class WifiAPClient implements IConnection{
+public class WifiAPClient extends WifiAPBase{
 	
     public static final int TYPE_NO_PASSWD = 0x11;  
     public static final int TYPE_WEP = 0x12;  
@@ -63,10 +63,10 @@ public class WifiAPClient implements IConnection{
         }
     }
 
-	public DataTransfer getDataTransfer()
-	{
-		return mDataTransfer;
-	}
+//	public DataTransfer getDataTransfer()
+//	{
+//		return mDataTransfer;
+//	}
     
 
 	    
@@ -312,7 +312,38 @@ public class WifiAPClient implements IConnection{
 			}
 		}
 	};
+	@Override
+	public void destroy() {
+		// TODO Auto-generated method stub
+		
+	}
 
+    public void sendData(byte[] data)
+    {
+    	mDataTransfer.sendData(data);
+    }
+    
+    public String getHostAddress()
+    {
+    	if(null!=mDataTransfer)
+    	{
+    		return mDataTransfer.getPeerAddress().getHostAddress();
+    	}
+    	else
+    	{
+    		return "";
+    	}
+    }
+    
+    public void registerDataReceiver(DataTransfer.IDataReceiver dataReceiver)
+    {
+    	mDataTransfer.registerDataReceiver(dataReceiver);
+    }
+    
+    public void unregisterDataReceiver(DataTransfer.IDataReceiver dataReceiver)
+    {
+    	mDataTransfer.unregisterDataReceiver(dataReceiver);
+    }
 	
 	
 }

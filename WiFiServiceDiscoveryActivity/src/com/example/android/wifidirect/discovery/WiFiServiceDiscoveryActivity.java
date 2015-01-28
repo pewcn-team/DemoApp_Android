@@ -31,10 +31,13 @@ import com.example.android.wifidirect.discovery.WifiPeerList.DeviceClickListener
 import com.example.android.wifidirect.discovery.WifiPeerList.WiFiDevicesAdapter;
 import com.example.app.ControlFragmentCar;
 import com.example.app.ControlFragmentTank;
+import com.example.app.ServerActivity;
 import com.example.connection.DataTransfer;
+import com.example.connection.ExitCommand;
 import com.example.connection.DataTransfer.IConnectionListener;
 import com.example.connection.IConnection.ConnectionState;
 import com.example.connection.IConnection.IOnStateChangeListener;
+import com.example.service.ServerService;
 import com.example.wifiap.WifiAPClient;
 import com.example.wifiap.WifiAPServer;
 import com.example.connection.IConnection;
@@ -43,8 +46,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.webrtc.webrtcdemo.MediaEngineObserver;
-
-import service.ServerService;
 
 /**
  * The main activity for the sample. This activity registers a local service and
@@ -76,26 +77,15 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     public static final String TYPE_TANK = "tank";
 
     private WifiP2pManager mP2pmanager;
-
     static final int SERVER_PORT = 4545;
-
     private final IntentFilter intentFilter = new IntentFilter();
     private Channel channel;
     private WiFiDirectBroadcastReceiver receiver = null;
-    private WifiP2pDnsSdServiceRequest serviceRequest;
-
-    private WiFiChatFragment chatFragment;
-    //private WiFiDirectServicesList servicesList;
- //   private WifiPeerList peerList;
-    private WebRTCFragment webRTCFragment;
-
     private TextView statusTxtView;
-    private boolean hasPeer = false;
     private WifiP2PConnection mConnection;
     private WifiManager mWifiManager;
     private boolean mIsServer;
-    private boolean mIsClientCreated = false;
-    private WifiAPServer mServer = null;
+    //private WifiAPServer mServer = null;
     private WifiAPClient mClient = null;
     private PowerManager.WakeLock mWakeLock = null;
     private Fragment mControlFragment = null;
@@ -109,7 +99,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mIsServer = false;
+        mIsServer = true;
         Log.v(TAG, "onCreate");
         getWindow().addFlags(LayoutParams.FLAG_TURN_SCREEN_ON | LayoutParams.FLAG_DISMISS_KEYGUARD | LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
@@ -342,10 +332,10 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         }
 
         if (mIsServer) {
-            if(mServer != null)
-            {
-                mServer.onResume();
-            }
+//            if(mServer != null)
+//            {
+//                mServer.onResume();
+//            }
         } else {
             if(mClient != null)
             {
@@ -363,10 +353,10 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             mWakeLock = null;
         }
         if (mIsServer) {
-            if(mServer != null)
-            {
-                //mServer.onPause();
-            }
+//            if(mServer != null)
+//            {
+//                //mServer.onPause();
+//            }
         } else {
             if(mClient != null)
             {
@@ -385,6 +375,17 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
+        	if(mIsServer)
+        	{
+        		
+        	}
+        	else
+        	{
+        		mWifiManager.setWifiEnabled(false);
+            	ExitCommand exit = new ExitCommand();
+            	mClient.sendData(exit.toBytes());
+        	}
+
             System.exit(0);
             return true;
         }
@@ -474,18 +475,10 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     }
 
     private void init() {
-		Intent intent = new Intent(this, ServerService.class);
-		startService(intent);		
+	
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
         if (!mIsServer) {
-            mWifiManager.setWifiEnabled(false);
-            try {
-                Thread.currentThread().sleep(2000);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
             mWifiManager.setWifiEnabled(true);
             mClient = new WifiAPClient(this);
             mClient.registerOnStateChangeListener(new IConnection.IOnStateChangeListener() {
@@ -510,6 +503,8 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             mClient.onResume();
         } else {
 
+    		Intent intent = new Intent(this, ServerService.class);
+    		startService(intent);	
         	//重置Wifi状态
             mWifiManager.setWifiEnabled(true);
             try {
@@ -519,25 +514,25 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
                 e.printStackTrace();
             }
             mWifiManager.setWifiEnabled(false);
-            mServer = new WifiAPServer(this);
-            mServer.registerOnStateChangeListener(new IOnStateChangeListener() {
-                @Override
-                public void onStateChange(ConnectionState state) {
-                    switch (state) {
-                        case CONNECTED:
-                            createControlFragment();
-                            break;
-                        case DISCONNECT:
-                            break;
-                        case TIMEOUT:
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            });
-            mServer.initial();
-            mServer.seekPeer();
+//            mServer = new WifiAPServer(this);
+//            mServer.registerOnStateChangeListener(new IOnStateChangeListener() {
+//                @Override
+//                public void onStateChange(ConnectionState state) {
+//                    switch (state) {
+//                        case CONNECTED:
+//                            createControlFragment();
+//                            break;
+//                        case DISCONNECT:
+//                            break;
+//                        case TIMEOUT:
+//                            break;
+//                        default:
+//                            break;
+//                    }
+//                }
+//            });
+//            mServer.initial();
+//            mServer.seekPeer();
 
         }
     }
@@ -547,41 +542,38 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             getFragmentManager().beginTransaction().remove(mControlFragment).commit();
         }
 
-        mServer.onPause();
+        //mServer.onPause();
         init();
 
         if (mIsServer) {
-            mServer.onResume();
+            //mServer.onResume();
         } else {
             mClient.onResume();
         }
     }
 
     private void createControlFragment() {
-        DataTransfer transfer = null;
         if (mIsServer) {
-            transfer = mServer.getDataTransfer();
+            ;//transfer = mServer.getDataTransfer();
         } else {
-            transfer = mClient.getDataTransfer();
+            //transfer = mClient.getDataTransfer();
             if(mVehicleType.equals("car"))
             {
-                mControlFragment = new ControlFragmentCar(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+                mControlFragment = new ControlFragmentCar(this, mClient.getHostAddress(), new MediaEngineObserver() {
                     @Override
                     public void newStats(String stats) {
 
 
                     }
-                }, transfer, mIsServer);
+                }, mClient, mIsServer);
             }
             else if(mVehicleType.equals("tank"))
             {
-                mControlFragment = new ControlFragmentTank(this, transfer.getPeerAddress().getHostAddress(), new MediaEngineObserver() {
+                mControlFragment = new ControlFragmentTank(this, mClient.getHostAddress(), new MediaEngineObserver() {
                     @Override
                     public void newStats(String stats) {
-
-
                     }
-                }, transfer, mIsServer);
+                }, mClient, mIsServer);
             }
         }
         
@@ -600,12 +592,6 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         //getFragmentManager().beginTransaction().remove(peerList).commitAllowingStateLoss();
        if(mIsServer)
        {
-    	 //由于该Activity会被stop掉，导致报Activity has been destroy 的错误，所以另外拉起一个Activity。
-    	   Intent intent = new Intent();
-    	   intent.putExtra("isServer", true);
-    	   intent.putExtra("address", transfer.getPeerAddress().getHostAddress());
-    	   intent.setClass(this, ServerActivity.class);
-    	   startActivity(intent);
        }
        else
        {

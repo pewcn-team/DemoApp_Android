@@ -95,11 +95,15 @@ public class DataTransfer {
 	}
 	
 	public void sendData(byte[] data){
-        try {
-            mOStream.write(data);
-        } catch (IOException e) {
-            Log.e(WiFiServiceDiscoveryActivity.TAG, "Exception during write", e);
-        }	
+		if(null != mOStream)
+		{
+	        try {
+	            mOStream.write(data);
+	        } catch (IOException e) {
+	            Log.e(WiFiServiceDiscoveryActivity.TAG, "Exception during write", e);
+	        }					
+		}
+
 	}
 	
 	private void startServerThread()
@@ -158,12 +162,6 @@ public class DataTransfer {
 	
 	private void receiveData(byte[] buffer)
 	{
-		if(null != new ExitCommand().fromBytes(buffer))
-		{
-			mConnectionListener.onDisconnect();
-			return;
-		}
-		
 		for(IDataReceiver dataReceiver:mDataReceiverList)
 		{
 			dataReceiver.onReceiveData(buffer);

@@ -16,11 +16,12 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.util.Log;
+
 import com.example.android.wifidirect.discovery.WiFiChatFragment;
 import com.example.connection.DataTransfer;
 import com.example.connection.IConnection;
 
-public class WifiAPServer implements IConnection {
+public class WifiAPServer extends WifiAPBase{
     String TAG = "WifiAPServer";
     WifiManager mWifiManager;
     String mSSID = "tank_test";
@@ -96,19 +97,20 @@ public class WifiAPServer implements IConnection {
     @Override
     public void disconnect() {
         mDataTransfer.destroy();
+        mDataTransfer = null;
         changeState(ConnectionState.DISCONNECT);
     }
 
     @Override
     public void reset() {
-
+    	initial();
     }
 
-    public DataTransfer getDataTransfer()
-    {
-    	 mInstance = this;
-        return mDataTransfer;
-    }
+//    public DataTransfer getDataTransfer()
+//    {
+//    	 mInstance = this;
+//        return mDataTransfer;
+//    }
 
 
     public WifiAPServer(Context context) {
@@ -147,14 +149,30 @@ public class WifiAPServer implements IConnection {
     
     public void sendData(byte[] data)
     {
-    	#
+    	mDataTransfer.sendData(data);
     }
     
     public void registerDataReceiver(DataTransfer.IDataReceiver dataReceiver)
     {
-    	#
+    	mDataTransfer.registerDataReceiver(dataReceiver);
+    }
+    
+    public void unregisterDataReceiver(DataTransfer.IDataReceiver dataReceiver)
+    {
+    	mDataTransfer.unregisterDataReceiver(dataReceiver);
     }
 
+    public String getHostAddress()
+    {
+    	if(null!=mDataTransfer)
+    	{
+    		return mDataTransfer.getPeerAddress().getHostAddress();
+    	}
+    	else
+    	{
+    		return "";
+    	}
+    }
     /**
      * 判断wifi是否连接成功,不是network
      *
@@ -253,6 +271,12 @@ public class WifiAPServer implements IConnection {
         t.start();
 
     }
+
+	@Override
+	public void destroy() {
+		// TODO Auto-generated method stub
+		
+	}
 
 
 }

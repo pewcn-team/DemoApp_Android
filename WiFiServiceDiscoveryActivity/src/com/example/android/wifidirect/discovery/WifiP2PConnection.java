@@ -349,5 +349,11 @@ public class WifiP2PConnection implements IConnection, ConnectionInfoListener, C
 
 	}
 
+	@Override
+	public void destroy() {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 }

@@ -1,14 +1,20 @@
 package com.example.app;
 
 import android.util.Log;
+
+import com.example.connection.BatteryState;
 import com.example.connection.ControlCommand;
 import com.example.connection.DataTransfer;
+import com.example.connection.ExitCommand;
+import com.example.connection.ICommand;
 import com.example.control.CarController;
+
 import org.webrtc.webrtcdemo.MediaEngineObserver;
 import org.webrtc.webrtcdemo.WebRTCLib;
 
 import com.example.android.wifidirect.discovery.R;
 import com.example.connection.DataTransfer.IDataReceiver;
+import com.example.wifiap.WifiAPBase;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -19,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import java.io.IOException;
 
@@ -29,15 +36,13 @@ public class ControlFragmentCar extends Fragment {
 	Button mBtnRight;
 	LinearLayout mRemoteLayout;
 	LinearLayout mLocalLayout;
+	TextView mTvBattery;
 	public static int BUTTON_INDEX_UP = 0;
 	public static int BUTTON_INDEX_DOWN = 1;
 	public static int BUTTON_INDEX_LEFT = 2;
 	public static int BUTTON_INDEX_RIGHT = 3;
 	public static int BUTTON_STATE_DOWN = 0;
 	public static int BUTTON_STATE_UP = 1;
-	public DataTransfer mDataTransfer = null;
-	private Button currentButton = null;
-	private Button prevButton = null;
 	private String mRemoteIP;
 	private MediaEngineObserver mObserver;
 	private WebRTCLib mWebrtc;
@@ -45,29 +50,52 @@ public class ControlFragmentCar extends Fragment {
     boolean mIsServer = false;
     private ControlCommand mCurrControlCommandVert = null;
 	private ControlCommand mCurrControlCommandHori = null;
-	private int mDirection = 0;
-	private CarController mController = null;
-	public ControlFragmentCar(Activity activity, String remoteIP, MediaEngineObserver observer, DataTransfer dataTransfer, boolean isServer)
+	private WifiAPBase mWifiAP;
+	public ControlFragmentCar(Activity activity, String remoteIP, MediaEngineObserver observer, WifiAPBase wifiap, boolean isServer)
 	{
 		mActivity = activity;
-		mDataTransfer = dataTransfer;
-		mDataTransfer.registerDataReceiver(new IDataReceiver() {
+		mWifiAP = wifiap;
+		wifiap.registerDataReceiver(new IDataReceiver() {
 			
 			@Override
 			public void onReceiveData(byte[] data) {
-				final ControlCommand command = (ControlCommand) new ControlCommand().fromBytes(data);
-				if(null != command)
+				if(data[0] == ICommand.TYPE_CONTROL)
 				{
-					mActivity.runOnUiThread(new Runnable() {
-						
-						@Override
-						public void run() {
-							changeButtonState(command.mDirection, command.mState);
+					final ControlCommand command = (ControlCommand) new ControlCommand().fromBytes(data);
+					if(null != command)
+					{
+						mActivity.runOnUiThread(new Runnable() {
 							
-						}
-					});
-					
+							@Override
+							public void run() {
+								changeButtonState(command.mDirection, command.mState);
+								
+							}
+						});
+						
+					}
 				}
+				else if(data[0] == ICommand.TYPE_BATTERY)
+				{
+					final BatteryState state = (BatteryState) new BatteryState().fromBytes(data);
+					if(null != state)
+					{
+						mActivity.runOnUiThread(new Runnable() {
+							
+							@Override
+							public void run() {
+								mTvBattery.setText("小车电量 " + state.mBatteryPercent + "%");
+								
+							}
+						});
+					}
+				}
+				else if(data[0] == ICommand.TYPE_EXIT)
+				{
+					mWifiAP.disconnect();
+					getActivity().finish();
+				}
+
 				
 			}
 		});
@@ -91,6 +119,9 @@ public class ControlFragmentCar extends Fragment {
 			if(event.getAction() == MotionEvent.ACTION_DOWN)
 			{
 				command.mState = (byte) BUTTON_STATE_DOWN;
+				
+//				ExitCommand exit = new ExitCommand();
+//				mWifiAP.sendData(exit.toBytes());
 			}
 			else if(event.getAction() == MotionEvent.ACTION_UP)
 			{
@@ -99,20 +130,12 @@ public class ControlFragmentCar extends Fragment {
 			
 			if(v.getId() == R.id.button_up)
 			{
-				command.mDirection = (byte) BUTTON_INDEX_UP;
+				command.mDirection = (byte) BUTTON_INDEX_DOWN;
 			}
 			else if(v.getId() == R.id.button_down)
 			{
-				command.mDirection = (byte) BUTTON_INDEX_DOWN;
+				command.mDirection = (byte) BUTTON_INDEX_UP;
 			}
-//			else if(v.getId() == R.id.button_left)
-//			{
-//				command.mDirection = (byte) BUTTON_INDEX_LEFT;
-//			}
-//			else if(v.getId() == R.id.button_right)
-//			{
-//				command.mDirection = (byte) BUTTON_INDEX_RIGHT;
-//			}
 			if(mCurrControlCommandVert == null)
 			{
 				sendCommand(command);
@@ -145,22 +168,13 @@ public class ControlFragmentCar extends Fragment {
 			{
 				command.mState = (byte) BUTTON_STATE_UP;
 			}
-
-//			if(v.getId() == R.id.button_up)
-//			{
-//				command.mDirection = (byte) BUTTON_INDEX_UP;
-//			}
-//			else if(v.getId() == R.id.button_down)
-//			{
-//				command.mDirection = (byte) BUTTON_INDEX_DOWN;
-//			}
 			if(v.getId() == R.id.button_left)
 			{
-				command.mDirection = (byte) BUTTON_INDEX_LEFT;
+				command.mDirection = (byte) BUTTON_INDEX_RIGHT;
 			}
 			else if(v.getId() == R.id.button_right)
 			{
-				command.mDirection = (byte) BUTTON_INDEX_RIGHT;
+				command.mDirection = (byte) BUTTON_INDEX_LEFT;
 			}
 			if(mCurrControlCommandHori == null)
 			{
@@ -195,6 +209,7 @@ public class ControlFragmentCar extends Fragment {
 		mBtnRight.setOnTouchListener(mOnTouchListenerHorizontal);
 		mRemoteLayout = (LinearLayout)view.findViewById(R.id.layout_remote);
 		mLocalLayout = (LinearLayout)view.findViewById(R.id.layout_local);
+		mTvBattery = (TextView)view.findViewById(R.id.textView_battery);
 		return view;
 	}
 	
@@ -327,7 +342,7 @@ public class ControlFragmentCar extends Fragment {
 	
 	private void sendCommand(ControlCommand command)
 	{
-		mDataTransfer.sendData(command.toBytes());
+		mWifiAP.sendData(command.toBytes());
 	}
 	
     @Override
@@ -372,6 +387,7 @@ public class ControlFragmentCar extends Fragment {
 			mWebrtc.stopCall();
 			mWebrtc.close();
 			mWebrtc = null;
+			System.gc();
 		}
 
 	}
