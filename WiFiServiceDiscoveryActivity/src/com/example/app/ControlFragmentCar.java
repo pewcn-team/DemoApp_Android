@@ -135,11 +135,11 @@ public class ControlFragmentCar extends Fragment {
 			
 			if(v.getId() == R.id.button_up)
 			{
-				command.mDirection = (byte) BUTTON_INDEX_DOWN;
+				command.mDirection = (byte) BUTTON_INDEX_RIGHT;
 			}
 			else if(v.getId() == R.id.button_down)
 			{
-				command.mDirection = (byte) BUTTON_INDEX_UP;
+				command.mDirection = (byte) BUTTON_INDEX_LEFT;
 			}
 			if(mCurrControlCommandVert == null)
 			{
@@ -175,11 +175,11 @@ public class ControlFragmentCar extends Fragment {
 			}
 			if(v.getId() == R.id.button_left)
 			{
-				command.mDirection = (byte) BUTTON_INDEX_RIGHT;
+				command.mDirection = (byte) BUTTON_INDEX_DOWN;
 			}
 			else if(v.getId() == R.id.button_right)
 			{
-				command.mDirection = (byte) BUTTON_INDEX_LEFT;
+				command.mDirection = (byte) BUTTON_INDEX_UP;
 			}
 			if(mCurrControlCommandHori == null)
 			{
@@ -393,11 +393,11 @@ public class ControlFragmentCar extends Fragment {
         mWebrtc = new WebRTCLib();
         if(mIsServer)
         {
-        	mWebrtc.open(this.getActivity(),mRemoteIP,true,true);
+        	mWebrtc.open(this.getActivity(),mRemoteIP);
         }
         else
         {
-        	mWebrtc.open(this.getActivity(),mRemoteIP,true,true);
+        	mWebrtc.open(this.getActivity(),mRemoteIP);
         }
         
         

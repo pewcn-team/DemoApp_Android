@@ -221,11 +221,11 @@ public class ControlFragmentTank extends Fragment {
         mWebrtc = new WebRTCLib();
         if(mIsServer)
         {
-        	mWebrtc.open(this.getActivity(),mRemoteIP,true,true);
+        	mWebrtc.open(this.getActivity(),mRemoteIP);
         }
         else
         {
-        	mWebrtc.open(this.getActivity(),mRemoteIP,true,true);
+        	mWebrtc.open(this.getActivity(),mRemoteIP);
         }
         
         

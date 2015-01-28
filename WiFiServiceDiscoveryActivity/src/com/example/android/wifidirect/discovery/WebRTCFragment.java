@@ -42,11 +42,11 @@ public class WebRTCFragment extends Fragment {
         webrtc = new WebRTCLib();
         if(mIsServer)
         {
-        	 webrtc.open(this.getActivity(),remoteIP,true,true);
+        	 webrtc.open(this.getActivity(),remoteIP);
         }
         else
         {
-        	webrtc.open(this.getActivity(),remoteIP,true,true);
+        	webrtc.open(this.getActivity(),remoteIP);
         }
        
         webrtc.startCall(llRemoteSurface,llLocalSurface); 
