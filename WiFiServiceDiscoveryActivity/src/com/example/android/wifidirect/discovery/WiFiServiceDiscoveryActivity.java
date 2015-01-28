@@ -99,7 +99,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mIsServer = true;
+        mIsServer = false;
         Log.v(TAG, "onCreate");
         getWindow().addFlags(LayoutParams.FLAG_TURN_SCREEN_ON | LayoutParams.FLAG_DISMISS_KEYGUARD | LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
@@ -381,9 +381,9 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         	}
         	else
         	{
-        		mWifiManager.setWifiEnabled(false);
             	ExitCommand exit = new ExitCommand();
             	mClient.sendData(exit.toBytes());
+            	mWifiManager.setWifiEnabled(false);
         	}
 
             System.exit(0);

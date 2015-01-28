@@ -1,5 +1,6 @@
 package com.example.wifiap;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -258,19 +259,33 @@ public class WifiAPClient extends WifiAPBase{
 				@Override
 				public void run() {
 					if (null == mDataTransfer) {
-						mDataTransfer = DataTransfer.createClientTransfer(null,fAddress, new IConnectionListener() {
-							
-							@Override
-							public void onDisconnect() {
-								changeState(ConnectionState.DISCONNECT);
-							}
-
-							@Override
-							public void onConnect() {
-								changeState(ConnectionState.CONNECTED);
+						
+						String hostAddress = fAddress.getHostAddress();
+						String []sub = hostAddress.split("\\.");
+						if(sub.length == 4)
+						{
+							hostAddress = String.format("%s.%s.%s.1", sub[0], sub[1], sub[2]);
+						}
+						try {
+							InetAddress address = InetAddress.getByName(hostAddress);
+							mDataTransfer = DataTransfer.createClientTransfer(null,address, new IConnectionListener() {
 								
-							}
-						});
+								@Override
+								public void onDisconnect() {
+									changeState(ConnectionState.DISCONNECT);
+								}
+
+								@Override
+								public void onConnect() {
+									changeState(ConnectionState.CONNECTED);
+									
+								}
+							});
+						} catch (UnknownHostException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
 					}
 				}
 			});

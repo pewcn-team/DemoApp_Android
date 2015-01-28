@@ -138,12 +138,13 @@ public class DataTransfer {
 			@Override
 			public void run() {
 				try {
+					//# 把地址换算的逻辑移到外面去
 					String hostAddress = mGroupOwnerAddress.getHostAddress();
-					String []sub = hostAddress.split("\\.");
-					if(sub.length == 4)
-					{
-						hostAddress = String.format("%s.%s.%s.1", sub[0], sub[1], sub[2]);
-					}
+//					String []sub = hostAddress.split("\\.");
+//					if(sub.length == 4)
+//					{
+//						hostAddress = String.format("%s.%s.%s.1", sub[0], sub[1], sub[2]);
+//					}
 					mSocket = new Socket(hostAddress, 4545);
 					mIsConnected = true;
 					handleSocket();
