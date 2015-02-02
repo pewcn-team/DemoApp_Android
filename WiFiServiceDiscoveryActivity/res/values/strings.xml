@@ -7,5 +7,5 @@
     <string name="app_name">Wi-Fi Discovery</string>
     <string name="connect_tank">连接坦克</string>
     <string name="connect_car">连接小车</string>
-
+    <string name="connect_home">连接家电</string>
 </resources>

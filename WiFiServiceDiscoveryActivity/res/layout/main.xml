@@ -17,16 +17,22 @@
             android:layout_height="fill_parent"
             android:layout_gravity="top"
             android:orientation="vertical" >
-            <Button
+
+            <ProgressBar
+                    style="?android:attr/progressBarStyleSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/progressBar"
+                    android:layout_gravity="center_horizontal"/>
+
+            <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/connect_tank"
-                    android:id="@+id/button_tank" android:layout_gravity="center_horizontal"/>
-            <Button
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/connect_car"
-                    android:id="@+id/button_car" android:layout_gravity="center_horizontal"/>
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:text="正在连接"
+                    android:id="@+id/textView"
+                    android:layout_gravity="center_horizontal"/>
+
         </LinearLayout>
 
 <!--         <LinearLayout -->

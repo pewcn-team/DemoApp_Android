@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+            android:id="@+id/textView_battery"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:text="设备电量100"
+            android:layout_marginRight="10dip"
+            android:layout_marginTop="10dip"
+            android:textSize="20dip"/>
+
+    <LinearLayout
+            android:id="@+id/ll_pic"
+            android:orientation="horizontal"
+            android:layout_below="@+id/textView_battery"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+
+        <ImageView
+                android:layout_width="96dip"
+                android:layout_height="96dip"
+                android:id="@+id/imageView_tai"
+                android:layout_weight="1"
+                android:src="@drawable/off"/>
+
+        <ImageView
+                android:layout_width="96dip"
+                android:layout_height="96dip"
+                android:id="@+id/imageView_diao"
+                android:layout_weight="1"
+                android:src="@drawable/off"
+                android:layout_marginLeft="20dp"/>
+
+        <ImageView
+                android:layout_width="96dip"
+                android:layout_height="96dip"
+                android:id="@+id/imageView_bi"
+                android:layout_weight="1"
+                android:layout_marginLeft="20dp"
+                android:src="@drawable/off"/>
+
+        <ImageView
+                android:layout_width="96dip"
+                android:layout_height="96dip"
+                android:id="@+id/imageView_riguang"
+                android:layout_weight="1"
+                android:layout_marginLeft="20dp"
+                android:src="@drawable/off"/>
+    </LinearLayout>
+
+    <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/ll_pic"
+            android:orientation="horizontal">
+
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="台灯"
+                android:id="@+id/button_taideng"
+                android:layout_centerVertical="true"
+                android:layout_alignParentLeft="true"
+                android:layout_weight="1"
+                android:layout_gravity="center"/>
+
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="吊灯"
+                android:id="@+id/button_diaodeng"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@+id/button_taideng"
+                android:layout_marginLeft="20dp"
+                android:layout_weight="1"/>
+
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="壁灯"
+                android:id="@+id/button_bideng"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@+id/button_diaodeng"
+                android:layout_marginLeft="20dp"
+                android:layout_weight="1"/>
+
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="日光灯"
+                android:id="@+id/button_riguangdeng"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@+id/button_bideng"
+                android:layout_marginLeft="20dp"
+                android:layout_weight="1"/>
+    </LinearLayout>
+
+
+</RelativeLayout>

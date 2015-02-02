@@ -23,6 +23,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
@@ -30,6 +31,7 @@ import com.example.android.wifidirect.discovery.WifiP2PConnection.StateChangeLis
 import com.example.android.wifidirect.discovery.WifiPeerList.DeviceClickListener;
 import com.example.android.wifidirect.discovery.WifiPeerList.WiFiDevicesAdapter;
 import com.example.app.ControlFragmentCar;
+import com.example.app.ControlFragmentLight;
 import com.example.app.ControlFragmentTank;
 import com.example.app.ServerActivity;
 import com.example.connection.DataTransfer;
@@ -90,8 +92,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     private PowerManager.WakeLock mWakeLock = null;
     private Fragment mControlFragment = null;
     private String mVehicleType = "car";
-    private Button mBtnTank;
-    private Button mBtnCar;
+
 
     /**
      * Called when the activity is first created.
@@ -99,36 +100,12 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mIsServer = false;
+        mIsServer = true;
         Log.v(TAG, "onCreate");
         getWindow().addFlags(LayoutParams.FLAG_TURN_SCREEN_ON | LayoutParams.FLAG_DISMISS_KEYGUARD | LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
-
         statusTxtView = (TextView) findViewById(R.id.status_text);
-       // peerList = new WifiPeerList();
-//        getFragmentManager().beginTransaction()
-//                .add(R.id.container_root, peerList, "services").commit();
-        mBtnTank = (Button)findViewById(R.id.button_tank);
-        mBtnTank.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mVehicleType = "tank";
-                init();
-            }
-        });
-
-        mBtnCar = (Button)findViewById(R.id.button_car);
-        mBtnCar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mVehicleType = "car";
-                init();
-            }
-        });
-        if(mIsServer)
-        {
-            init();
-        }
+        init();
 
     }
 
@@ -514,26 +491,6 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
                 e.printStackTrace();
             }
             mWifiManager.setWifiEnabled(false);
-//            mServer = new WifiAPServer(this);
-//            mServer.registerOnStateChangeListener(new IOnStateChangeListener() {
-//                @Override
-//                public void onStateChange(ConnectionState state) {
-//                    switch (state) {
-//                        case CONNECTED:
-//                            createControlFragment();
-//                            break;
-//                        case DISCONNECT:
-//                            break;
-//                        case TIMEOUT:
-//                            break;
-//                        default:
-//                            break;
-//                    }
-//                }
-//            });
-//            mServer.initial();
-//            mServer.seekPeer();
-
         }
     }
 
@@ -553,51 +510,20 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
     }
 
     private void createControlFragment() {
-        if (mIsServer) {
-            ;//transfer = mServer.getDataTransfer();
-        } else {
-            //transfer = mClient.getDataTransfer();
-            if(mVehicleType.equals("car"))
-            {
-                mControlFragment = new ControlFragmentCar(this, mClient.getHostAddress(), new MediaEngineObserver() {
-                    @Override
-                    public void newStats(String stats) {
 
+        mControlFragment = new ControlFragmentLight(this, mClient.getHostAddress(), mClient);
 
-                    }
-                }, mClient, mIsServer);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ProgressBar bar = (ProgressBar)findViewById(R.id.progressBar);
+                TextView tv = (TextView)findViewById(R.id.textView);
+                bar.setVisibility(View.GONE);
+                tv.setVisibility(View.GONE);
             }
-            else if(mVehicleType.equals("tank"))
-            {
-                mControlFragment = new ControlFragmentTank(this, mClient.getHostAddress(), new MediaEngineObserver() {
-                    @Override
-                    public void newStats(String stats) {
-                    }
-                }, mClient, mIsServer);
-            }
-        }
-        
+        });
 
-
-        this.runOnUiThread(new Runnable() {
-			
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-		        mBtnCar.setVisibility(View.GONE);
-		        mBtnTank.setVisibility(View.GONE);				
-			}
-		});
-
-        //getFragmentManager().beginTransaction().remove(peerList).commitAllowingStateLoss();
-       if(mIsServer)
-       {
-       }
-       else
-       {
-    	   
-    	   getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commitAllowingStateLoss();
-       }
+    	getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commitAllowingStateLoss();
         
     }
 }

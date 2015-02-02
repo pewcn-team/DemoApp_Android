@@ -1,5 +1,7 @@
 package com.example.app;
 
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import org.webrtc.webrtcdemo.MediaEngineObserver;
 
 import com.example.android.wifidirect.discovery.R;
@@ -42,19 +44,14 @@ public class ServerActivity extends Activity {
 			ServerService.LocalService localService = (LocalService) service;
 			mServer = localService.getService().getServer();
 			runOnUiThread(new Runnable() {
-				
 				@Override
 				public void run() {
-			        mControlFragment = new ControlFragmentCar(ServerActivity.this, mAddress, new MediaEngineObserver() {
-			            @Override
-			            public void newStats(String stats) {
-
-
-			            }
-			        }, mServer, true);
-			        
+                    ProgressBar bar = (ProgressBar)findViewById(R.id.progressBar);
+                    TextView tv = (TextView)findViewById(R.id.textView);
+                    bar.setVisibility(View.GONE);
+                    tv.setVisibility(View.GONE);
+			        mControlFragment = new ControlFragmentLight(ServerActivity.this, mAddress, mServer);
 			        getFragmentManager().beginTransaction().add(R.id.container_root, mControlFragment, "control").commitAllowingStateLoss();
-					
 				}
 			});
 		}
@@ -66,12 +63,7 @@ public class ServerActivity extends Activity {
         Log.v(WiFiServiceDiscoveryActivity.TAG, "service onCreate");
         getWindow().addFlags(LayoutParams.FLAG_TURN_SCREEN_ON | LayoutParams.FLAG_DISMISS_KEYGUARD | LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
-        
-        Button mBtnTank = (Button)findViewById(R.id.button_tank);
-        mBtnTank.setVisibility(View.GONE);
-        
-        Button mBtnCar = (Button)findViewById(R.id.button_car);
-        mBtnCar.setVisibility(View.GONE);
+
         Intent intent = getIntent();
         mAddress = intent.getStringExtra("address");
         Intent serviceIntent = new Intent(this, ServerService.class);
