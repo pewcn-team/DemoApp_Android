@@ -22,6 +22,7 @@ import android.content.IntentFilter;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
 import android.os.Environment;
 import android.util.Log;
 import android.view.OrientationEventListener;
@@ -194,6 +195,10 @@ public class MediaEngine implements VideoDecodeEncodeObserver {
           }
         };
     orientationListener.enable();
+    // Set audio mode to communication
+    AudioManager audioManager =
+        ((AudioManager) context.getSystemService(Context.AUDIO_SERVICE));
+    audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
     // Listen to headset being plugged in/out.
     IntentFilter receiverFilter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
     headsetListener = new BroadcastReceiver() {
@@ -423,8 +428,9 @@ public class MediaEngine implements VideoDecodeEncodeObserver {
 
   private void updateAudioOutput() {
     boolean useSpeaker = !headsetPluggedIn && speakerEnabled;
-    check(voe.setLoudspeakerStatus(useSpeaker) == 0,
-        "Failed updating loudspeaker");
+    AudioManager audioManager =
+        ((AudioManager) context.getSystemService(Context.AUDIO_SERVICE));
+    audioManager.setSpeakerphoneOn(useSpeaker);
   }
 
   public void startViE() {
@@ -554,6 +560,14 @@ public class MediaEngine implements VideoDecodeEncodeObserver {
     if (videoTxPort != 0) {
       check(vie.setSendDestination(videoChannel, videoTxPort, remoteIp) == 0,
           "Failed setSendDestination");
+    }
+
+    // Setting localSSRC manually (arbitrary value) for loopback test,
+    // As otherwise we will get a clash and a new SSRC will be set,
+    // Which will reset the receiver and other minor issues.
+    if (remoteIp.equals("127.0.0.1")) {
+      check(vie.setLocalSSRC(videoChannel, 0x01234567) == 0,
+           "Failed setLocalSSRC");
     }
   }
 

@@ -16,6 +16,7 @@
 #include <map>
 #include <string>
 
+#include "webrtc/base/arraysize.h"
 #include "webrtc/common_types.h"
 #include "webrtc/examples/android/media_demo/jni/jni_helpers.h"
 #include "webrtc/examples/android/media_demo/jni/media_codec_video_decoder.h"
@@ -330,7 +331,7 @@ void SetVieDeviceObjects(JavaVM* vm) {
   webrtc::AttachThreadScoped ats(g_vm);
   JNIEnv* jni = ats.env();
   g_class_reference_holder = new ClassReferenceHolder(
-      jni, g_classes, ARRAYSIZE(g_classes));
+      jni, g_classes, arraysize(g_classes));
 }
 
 void ClearVieDeviceObjects() {
@@ -594,7 +595,7 @@ JOWW(jobject, VideoEngine_getReceivedRtcpStatistics)(JNIEnv* jni, jobject j_vie,
   unsigned int cumulative_lost;  // NOLINT
   unsigned int extended_max;     // NOLINT
   unsigned int jitter;           // NOLINT
-  int rtt_ms;
+  int64_t rtt_ms;
   VideoEngineData* vie_data = GetVideoEngineData(jni, j_vie);
   if (vie_data->rtp->GetReceivedRTCPStatistics(channel, fraction_lost,
                                                cumulative_lost, extended_max,
@@ -608,7 +609,7 @@ JOWW(jobject, VideoEngine_getReceivedRtcpStatistics)(JNIEnv* jni, jobject j_vie,
   jobject j_rtcp_statistics =
       jni->NewObject(j_rtcp_statistics_class, j_rtcp_statistics_ctor,
                      fraction_lost, cumulative_lost, extended_max, jitter,
-                     rtt_ms);
+                     static_cast<int>(rtt_ms));
   CHECK_EXCEPTION(jni, "error during NewObject");
   return j_rtcp_statistics;
 }
@@ -709,4 +710,10 @@ JOWW(void, VideoCodecInst_setMaxFrameRate)(JNIEnv* jni, jobject j_codec,
 
 JOWW(void, CameraDesc_dispose)(JNIEnv* jni, jobject j_camera) {
   delete GetCameraDesc(jni, j_camera);
+}
+
+JOWW(jint, VideoEngine_setLocalSSRC)(JNIEnv* jni, jobject j_vie, jint channel,
+                                      jint ssrc) {
+  VideoEngineData* vie_data = GetVideoEngineData(jni, j_vie);
+  return vie_data->rtp->SetLocalSSRC(channel, ssrc);
 }

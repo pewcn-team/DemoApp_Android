@@ -12,6 +12,7 @@ package org.webrtc.webrtcdemo;
 
 
 import android.content.Context;
+import android.util.Log;
 import android.view.SurfaceView;
 import android.widget.LinearLayout;
 
@@ -22,14 +23,15 @@ public class WebRTCLib {
   private MediaEngine getEngine() { return mediaEngine; }
   private LinearLayout llRemoteSurface = null;
   private LinearLayout llLocalSurface = null;
+  private static String TAG = "WebRTCLib";
   /***
    * open -- 打开WebRTCLib
    * @param context 使用WebRTCLib的Activity的对象
    * @param remoteIP 对端的IP
-   * @param rxVideo Enable接受视频 -- 现在都是true
-   * @param txVideo Enable发送视屏 -- 现在都是true
+   * @param rxVideo Enable接受视频 
+   * @param txVideo Enable发送视屏 
    */
-  public void open(Context context,String remoteIP,boolean rxVideo,boolean txVideo) {
+  private void open(Context context,String remoteIP,boolean rxVideo,boolean txVideo) {
     // State.
     // Must be instantiated before MediaEngine.
     contextRegistry = new NativeWebRtcContextRegistry();
@@ -106,7 +108,18 @@ public class WebRTCLib {
         llLocalSurface.removeView(svLocal);
       }
     }
-
+    public void openAsReceiver(Context context,String remoteIP) {
+        Log.d(TAG, "openAsReceiver:"+remoteIP);
+        this.open(context, remoteIP, true, false);
+    }
+    public void openAsSender(Context context,String remoteIP) {
+        Log.d(TAG, "openAsSender:"+remoteIP);
+        this.open(context, remoteIP, false, true);
+    }
+    public void open(Context context,String remoteIP) {
+        Log.d(TAG, "open:"+remoteIP);
+        this.open(context, remoteIP, true, true);
+    }
     /***
      * stopCall 结束呼叫对端
      */
