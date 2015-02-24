@@ -5,19 +5,15 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.android.wifidirect.discovery.WiFiServiceDiscoveryActivity;
-import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
 import com.example.connection.DataTransfer;
-import com.example.connection.DataTransfer.IConnectionListener;
+import com.example.connection.HelloCommand;
 import com.example.connection.IConnection;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.NetworkInfo.DetailedState;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
@@ -40,6 +36,7 @@ public class WifiAPClient implements IConnection{
 	private DataTransfer mDataTransfer = null;
 	private boolean mIsClientCreated = false;
 	private ArrayList<IConnection.IOnStateChangeListener> mListeners = new ArrayList<IConnection.IOnStateChangeListener>();
+	private DataTransfer.IDataReceiver mDataReceiver;
 	public WifiAPClient(Context context)
 	{
 		mContext = context;
@@ -69,39 +66,6 @@ public class WifiAPClient implements IConnection{
 	}
     
 
-	    
-
-//	/**
-//	 * 判断wifi是否连接成功,不是network
-//	 * 
-//	 * @param context
-//	 * @return
-//	 */
-//	private int isWifiContected(Context context) {
-//		ConnectivityManager connectivityManager = (ConnectivityManager) context
-//				.getSystemService(Context.CONNECTIVITY_SERVICE);
-//		NetworkInfo wifiNetworkInfo = connectivityManager
-//				.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-//
-//		Log.v(TAG,
-//				"isConnectedOrConnecting = "
-//						+ wifiNetworkInfo.isConnectedOrConnecting());
-//		Log.d(TAG,
-//				"wifiNetworkInfo.getDetailedState() = "
-//						+ wifiNetworkInfo.getDetailedState());
-//		if (wifiNetworkInfo.getDetailedState() == DetailedState.OBTAINING_IPADDR
-//				|| wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTING) {
-//			return WIFI_CONNECTING;
-//		} else if (wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTED) {
-//			return WIFI_CONNECTED;
-//		} else {
-//			Log.d(TAG,
-//					"getDetailedState() == "
-//							+ wifiNetworkInfo.getDetailedState());
-//			return WIFI_CONNECT_FAILED;
-//		}
-//	}
-  
     public void onPause()
     {
     	mContext.unregisterReceiver(mBroadcastReceiver);
@@ -258,17 +222,16 @@ public class WifiAPClient implements IConnection{
 				@Override
 				public void run() {
 					if (null == mDataTransfer) {
-						mDataTransfer = DataTransfer.createClientTransfer(null,fAddress, new IConnectionListener() {
-							
-							@Override
-							public void onDisconnect() {
-								changeState(ConnectionState.DISCONNECT);
-							}
+						mDataTransfer = DataTransfer.createClientTransfer(null,fAddress);
 
+						mDataTransfer.registerDataReceiver(mDataReceiver = new DataTransfer.IDataReceiver() {
 							@Override
-							public void onConnect() {
-								changeState(ConnectionState.CONNECTED);
-								
+							public void onReceiveData(byte[] data) {
+								if(null!= new HelloCommand().fromBytes(data) )
+								{
+									changeState(ConnectionState.CONNECTED);
+									mDataTransfer.unregisterDataReceiver(mDataReceiver);
+								}
 							}
 						});
 					}

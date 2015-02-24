@@ -36,8 +36,6 @@ public class ControlFragmentCar extends Fragment {
 	public static int BUTTON_STATE_DOWN = 0;
 	public static int BUTTON_STATE_UP = 1;
 	public DataTransfer mDataTransfer = null;
-	private Button currentButton = null;
-	private Button prevButton = null;
 	private String mRemoteIP;
 	private MediaEngineObserver mObserver;
 	private WebRTCLib mWebrtc;
@@ -45,13 +43,12 @@ public class ControlFragmentCar extends Fragment {
     boolean mIsServer = false;
     private ControlCommand mCurrControlCommandVert = null;
 	private ControlCommand mCurrControlCommandHori = null;
-	private int mDirection = 0;
-	private CarController mController = null;
+	private IDataReceiver mDataReceiver = null;
 	public ControlFragmentCar(Activity activity, String remoteIP, MediaEngineObserver observer, DataTransfer dataTransfer, boolean isServer)
 	{
 		mActivity = activity;
 		mDataTransfer = dataTransfer;
-		mDataTransfer.registerDataReceiver(new IDataReceiver() {
+		mDataTransfer.registerDataReceiver(mDataReceiver = new IDataReceiver() {
 			
 			@Override
 			public void onReceiveData(byte[] data) {
@@ -105,14 +102,6 @@ public class ControlFragmentCar extends Fragment {
 			{
 				command.mDirection = (byte) BUTTON_INDEX_DOWN;
 			}
-//			else if(v.getId() == R.id.button_left)
-//			{
-//				command.mDirection = (byte) BUTTON_INDEX_LEFT;
-//			}
-//			else if(v.getId() == R.id.button_right)
-//			{
-//				command.mDirection = (byte) BUTTON_INDEX_RIGHT;
-//			}
 			if(mCurrControlCommandVert == null)
 			{
 				sendCommand(command);
@@ -146,14 +135,6 @@ public class ControlFragmentCar extends Fragment {
 				command.mState = (byte) BUTTON_STATE_UP;
 			}
 
-//			if(v.getId() == R.id.button_up)
-//			{
-//				command.mDirection = (byte) BUTTON_INDEX_UP;
-//			}
-//			else if(v.getId() == R.id.button_down)
-//			{
-//				command.mDirection = (byte) BUTTON_INDEX_DOWN;
-//			}
 			if(v.getId() == R.id.button_left)
 			{
 				command.mDirection = (byte) BUTTON_INDEX_LEFT;
@@ -373,6 +354,7 @@ public class ControlFragmentCar extends Fragment {
 			mWebrtc.close();
 			mWebrtc = null;
 		}
+		mDataTransfer.unregisterDataReceiver(mDataReceiver);
 
 	}
 

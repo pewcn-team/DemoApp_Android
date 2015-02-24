@@ -23,15 +23,7 @@ public class DataTransfer {
 		public void onReceiveData(byte[] data);
 	}
 	
-	public interface IConnectionListener
-	{
-		
-		public void onConnect();
-		
-		public void onDisconnect();
-		
-	}
-	
+
     private InputStream mIStream;
     private OutputStream mOStream;
     private ServerSocket mServerSocket = null;
@@ -41,7 +33,6 @@ public class DataTransfer {
     private InetAddress mGroupOwnerAddress;
     private ArrayList<IDataReceiver> mDataReceiverList = new ArrayList<IDataReceiver>();
     private InetAddress mPeer;
-    private IConnectionListener mConnectionListener = null;
     private boolean mIsConnected = false;
     public void registerDataReceiver(IDataReceiver dataReceiver)
     {
@@ -53,26 +44,24 @@ public class DataTransfer {
     	mDataReceiverList.remove(dataReceiver);
     }
     
-	public static DataTransfer createClientTransfer(Handler handler, InetAddress groupOwnerAddress, IConnectionListener listener)
+	public static DataTransfer createClientTransfer(Handler handler, InetAddress groupOwnerAddress)
 	{
 		DataTransfer transfer = null;
 		transfer = new DataTransfer();
 		transfer.mIsServer = false;
 		transfer.mGroupOwnerAddress = groupOwnerAddress;
 		Log.v(WiFiServiceDiscoveryActivity.TAG, "createClientTransfer");
-		transfer.mConnectionListener = listener;
 		transfer.startClientThread();
 		return transfer;
 	}
 	
-	public static DataTransfer createServerTransfer(Handler handler, IConnectionListener listener)
+	public static DataTransfer createServerTransfer()
 	{
 		DataTransfer transfer = null;
 		try {
 			transfer = new DataTransfer();
 			transfer.mIsServer = true;
 			transfer.mServerSocket = new ServerSocket(4545);
-			transfer.mConnectionListener = listener;
 			Log.v(WiFiServiceDiscoveryActivity.TAG, "createServerTransfer");
 			transfer.startServerThread();
 		} catch (IOException e) {
@@ -159,12 +148,8 @@ public class DataTransfer {
 	
 	private void receiveData(byte[] buffer)
 	{
-		if(null != new ExitCommand().fromBytes(buffer))
-		{
-			mConnectionListener.onDisconnect();
-			return;
-		}
-		
+
+
 		for(IDataReceiver dataReceiver:mDataReceiverList)
 		{
 			dataReceiver.onReceiveData(buffer);
@@ -210,7 +195,7 @@ public class DataTransfer {
     	mIsConnected = false;
     }
     
-    public void handleSocket()
+    private void handleSocket()
     {
     	mPeer = mSocket.getInetAddress();
 		Log.d(WiFiServiceDiscoveryActivity.TAG, "start loop");
@@ -223,14 +208,13 @@ public class DataTransfer {
 			return;
 		}
 
-		mConnectionListener.onConnect();
+		HelloCommand command = new HelloCommand();
+		sendData(command.toBytes());
+
 		byte[] buffer = new byte[1024];
-		int bytes;
 		while (mIsConnected) {
 			try {
-				bytes = mIStream.read(buffer);
-				Log.d(WiFiServiceDiscoveryActivity.TAG,
-						"Rec:" + String.valueOf(buffer));
+				mIStream.read(buffer);
 				receiveData(buffer);
 			} catch (IOException e) {
 				Log.e(WiFiServiceDiscoveryActivity.TAG, "disconnected",

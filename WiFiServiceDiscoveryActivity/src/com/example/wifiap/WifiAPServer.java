@@ -18,6 +18,7 @@ import android.net.wifi.WifiManager;
 import android.util.Log;
 import com.example.android.wifidirect.discovery.WiFiChatFragment;
 import com.example.connection.DataTransfer;
+import com.example.connection.HelloCommand;
 import com.example.connection.IConnection;
 
 public class WifiAPServer implements IConnection {
@@ -33,7 +34,7 @@ public class WifiAPServer implements IConnection {
     private ArrayList<IOnStateChangeListener> mListeners = new ArrayList<IConnection.IOnStateChangeListener>();
 
     public static WifiAPServer mInstance= null;
-    
+    private DataTransfer.IDataReceiver mDataReceiver;
     
     @Override
     public void initial() {
@@ -225,18 +226,18 @@ public class WifiAPServer implements IConnection {
             public void run() {
                 if (null == mDataTransfer) {
                     mDataTransfer = DataTransfer
-                            .createServerTransfer(
-                                    null,new DataTransfer.IConnectionListener() {
-                                        @Override
-                                        public void onConnect() {
-                                            changeState(ConnectionState.CONNECTED);
-                                        }
+                            .createServerTransfer();
 
-                                        @Override
-                                        public void onDisconnect() {
-                                            changeState(ConnectionState.DISCONNECT);
-                                        }
-                                    });
+                    mDataTransfer.registerDataReceiver(mDataReceiver = new DataTransfer.IDataReceiver() {
+                        @Override
+                        public void onReceiveData(byte[] data) {
+                            if(null!= new HelloCommand().fromBytes(data) )
+                            {
+                                changeState(ConnectionState.CONNECTED);
+                                mDataTransfer.unregisterDataReceiver(mDataReceiver);
+                            }
+                        }
+                    });
                 }
             }
         });
