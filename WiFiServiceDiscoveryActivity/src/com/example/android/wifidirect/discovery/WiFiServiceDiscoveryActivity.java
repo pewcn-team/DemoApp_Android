@@ -7,43 +7,25 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
-import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
-import android.net.wifi.p2p.WifiP2pInfo;
-import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
-import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
-import com.example.android.wifidirect.discovery.WifiP2PConnection.StateChangeListener;
-import com.example.android.wifidirect.discovery.WifiPeerList.DeviceClickListener;
 import com.example.android.wifidirect.discovery.WifiPeerList.WiFiDevicesAdapter;
 import com.example.app.ControlFragmentCar;
 import com.example.app.ControlFragmentTank;
-import com.example.app.ServerActivity;
-import com.example.connection.DataTransfer;
 import com.example.connection.ExitCommand;
-import com.example.connection.DataTransfer.IConnectionListener;
 import com.example.connection.IConnection.ConnectionState;
-import com.example.connection.IConnection.IOnStateChangeListener;
 import com.example.service.ServerService;
 import com.example.wifiap.WifiAPClient;
-import com.example.wifiap.WifiAPServer;
 import com.example.connection.IConnection;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import org.webrtc.webrtcdemo.MediaEngineObserver;
 
@@ -58,25 +40,18 @@ import org.webrtc.webrtcdemo.MediaEngineObserver;
  * {@code WiFiChatFragment} is then added to the the main activity which manages
  * the interface and messaging needs for a chat session.
  */
-public class WiFiServiceDiscoveryActivity extends Activity implements
-        DeviceClickListener {
+public class WiFiServiceDiscoveryActivity extends Activity {
 
 
     public static final String TAG = "wifidirectdemo";
 
-    // TXT RECORD properties
-    public static final String TXTRECORD_PROP_AVAILABLE = "available";
-    public static final String SERVICE_INSTANCE = "_wifidemotest";
-    public static final String SERVICE_REG_TYPE = "_presence._tcp";
 
     public static final int MESSAGE_READ = 0x400 + 1;
     public static final int MY_HANDLE = 0x400 + 2;
-    public static final int UPDATE_STATE = 0x400 + 3;
 
     public static final String TYPE_CAR = "car";
     public static final String TYPE_TANK = "tank";
 
-    private WifiP2pManager mP2pmanager;
     static final int SERVER_PORT = 4545;
     private final IntentFilter intentFilter = new IntentFilter();
     private Channel channel;
@@ -105,14 +80,11 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         setContentView(R.layout.main);
 
         statusTxtView = (TextView) findViewById(R.id.status_text);
-       // peerList = new WifiPeerList();
-//        getFragmentManager().beginTransaction()
-//                .add(R.id.container_root, peerList, "services").commit();
         mBtnTank = (Button)findViewById(R.id.button_tank);
         mBtnTank.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mVehicleType = "tank";
+                mVehicleType = TYPE_TANK;
                 init();
             }
         });
@@ -121,7 +93,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         mBtnCar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mVehicleType = "car";
+                mVehicleType = TYPE_CAR;
                 init();
             }
         });
@@ -156,171 +128,10 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         //System.exit(10);
     }
 
-    /**
-     * Registers a local service and then initiates a service discovery
-     */
-    private void startRegistrationAndDiscovery() {
-        Map<String, String> record = new HashMap<String, String>();
-        record.put(TXTRECORD_PROP_AVAILABLE, "visible");
-
-//        manager.addLocalService(channel, service, new ActionListener() {
-//
-//            @Override
-//            public void onSuccess() {
-//                appendStatus("Added Local Service");
-//            }
-//
-//            @Override
-//            public void onFailure(int error) {
-//                appendStatus("Failed to add a service");
-//            }
-//        });
-
-//        manager.discoverPeers(channel, new ActionListener() {
-//			
-//			@Override
-//			public void onSuccess() {
-//				// TODO Auto-generated method stub
-//				Toast.makeText(WiFiServiceDiscoveryActivity.this, "Find a peer", Toast.LENGTH_SHORT).show();
-//			}
-//				@Override
-//				public void onFailure(int reason) {
-//					// TODO Auto-generated method stub
-//					
-//				}
-//			});
-    }
-
-    private void discoverService() {
-
-        /*
-         * Register listeners for DNS-SD services. These are callbacks invoked
-         * by the system when a service is actually discovered.
-         */
-
-//        manager.setDnsSdResponseListeners(channel,
-//                new DnsSdServiceResponseListener() {
-//
-//                    @Override
-//                    public void onDnsSdServiceAvailable(String instanceName,
-//                            String registrationType, WifiP2pDevice srcDevice) {
-//
-//                        // A service has been discovered. Is this our app?
-//
-//                        if (instanceName.equalsIgnoreCase(SERVICE_INSTANCE)) {
-//
-//                            // update the UI and add the item the discovered
-//                            // device.
-//                            WiFiDirectServicesList fragment = (WiFiDirectServicesList) getFragmentManager()
-//                                    .findFragmentByTag("services");
-//                            if (fragment != null) {
-//                            }
-//                        }
-//
-//                    }
-//                }, new DnsSdTxtRecordListener() {
-//
-//                    /**
-//                     * A new TXT record is available. Pick up the advertised
-//                     * buddy name.
-//                     */
-//                    @Override
-//                    public void onDnsSdTxtRecordAvailable(
-//                            String fullDomainName, Map<String, String> record,
-//                            WifiP2pDevice device) {
-//                        Log.d(TAG,
-//                                device.deviceName + " is "
-//                                        + record.get(TXTRECORD_PROP_AVAILABLE));
-//                    }
-//                });
-
-        // After attaching listeners, create a service request and initiate
-        // discovery.
-//        serviceRequest = WifiP2pDnsSdServiceRequest.newInstance();
-//        manager.addServiceRequest(channel, serviceRequest,
-//                new ActionListener() {
-//
-//                    @Override
-//                    public void onSuccess() {
-//                        appendStatus("Added service discovery request");
-//                    }
-//
-//                    @Override
-//                    public void onFailure(int arg0) {
-//                        appendStatus("Failed adding service discovery request");
-//                    }
-//                });
-//        manager.discoverServices(channel, new ActionListener() {
-//
-//            @Override
-//            public void onSuccess() {
-//                appendStatus("Service discovery initiated");
-//            }
-//
-//            @Override
-//            public void onFailure(int arg0) {
-//                appendStatus("Service discovery failed");
-//
-//            }
-//        });
 
 
-    }
 
-    WifiP2pDevice mDevice;
 
-    @Override
-    public void connectP2p(WifiP2pDevice device) {
-//    	mDevice = device;
-//        WifiP2pConfig config = new WifiP2pConfig();
-//        config.deviceAddress = device.deviceAddress;
-//        config.wps.setup = WpsInfo.PBC;
-//        if (serviceRequest != null)
-//        	mP2pmanager.removeServiceRequest(channel, serviceRequest,
-//                    new ActionListener() {
-//
-//                        @Override
-//                        public void onSuccess() {
-//                        }
-//
-//                        @Override
-//                        public void onFailure(int arg0) {
-//                        }
-//                    });
-//
-//        mP2pmanager.connect(channel, config, new ActionListener() {
-//
-//            @Override
-//            public void onSuccess() {
-//                appendStatus("Connecting to service");
-//            }
-//
-//            @Override
-//            public void onFailure(int errorCode) {
-//                appendStatus("Failed connecting to service");
-//            }
-//        });
-//    	mConnection.connect(device);
-    }
-
-/*    @Override
-    public boolean handleMessage(Message msg) {
-        switch (msg.what) {
-            case MESSAGE_READ:
-                byte[] readBuf = (byte[]) msg.obj;
-                // construct a string from the valid bytes in the buffer
-                String readMessage = new String(readBuf, 0, msg.arg1);
-                Log.d(TAG, readMessage);
-                (chatFragment).pushMessage("Buddy: " + readMessage);
-                break;
-
-            case UPDATE_STATE:
-                String stateString = (String)msg.obj;
-                this.statusTxtView.setText(stateString);
-
-        }
-        return true;
-    }*/
 
     @Override
     public void onResume() {
@@ -411,69 +222,6 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
         statusTxtView.setText(message);
     }
 
-    @Deprecated
-    private void initWifiP2P() {
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-        intentFilter
-                .addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-        intentFilter
-                .addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
-
-        mP2pmanager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
-        channel = mP2pmanager.initialize(this, getMainLooper(), mConnection);
-
-        startRegistrationAndDiscovery();
-
-        mConnection = new WifiP2PConnection(mP2pmanager, channel, mWifiManager, (WiFiDirectBroadcastReceiver) receiver);
-        mConnection.setStateChangeListener(new StateChangeListener() {
-
-            @Override
-            public void onStateChanged(int state) {
-                switch (state) {
-                    case WifiP2PConnection.STATE_INIT:
-                        displayState("initial.....");
-                        break;
-                    case WifiP2PConnection.STATE_READY:
-                        displayState("ready......");
-                        mConnection.seekPeer();
-                        break;
-                    case WifiP2PConnection.STATE_SEEKPEER:
-                        displayState("seeking available peers....");
-                        break;
-                    case WifiP2PConnection.STATE_FOUNDPEER:
-                        displayState("found available peers");
-                        WifiP2pDeviceList peers = mConnection.getAvailablePeers();
-                        showAvailablePeers(peers);
-                        break;
-                    case WifiP2PConnection.STATE_CONNECTING:
-                        displayState("connecting......");
-                        break;
-                    case WifiP2PConnection.STATE_CONNECTED:
-                        WifiP2pInfo info = mConnection.getWifiP2pInfo();
-                        displayState("connected......");
-                        if (info.isGroupOwner) {
-                            Log.d(TAG, "Connected as group owner");
-                            mIsServer = true;
-                        } else {
-                            Log.d(TAG, "Connected as peer");
-                            mIsServer = false;
-                            // mDataTransfer = DataTransfer.createClientTransfer(((MessageTarget)WiFiServiceDiscoveryActivity.this).getHandler(), info.groupOwnerAddress);
-                        }
-                        break;
-                    case WifiP2PConnection.STATE_TIMEOUT:
-                        displayState("time out");
-                        break;
-                    case WifiP2PConnection.STATE_DISCONNECT:
-                        displayState("disconnect");
-                        break;
-                }
-            }
-        });
-
-        mConnection.initial();
-    }
-
     private void init() {
 	
         mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
@@ -514,25 +262,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
                 e.printStackTrace();
             }
             mWifiManager.setWifiEnabled(false);
-//            mServer = new WifiAPServer(this);
-//            mServer.registerOnStateChangeListener(new IOnStateChangeListener() {
-//                @Override
-//                public void onStateChange(ConnectionState state) {
-//                    switch (state) {
-//                        case CONNECTED:
-//                            createControlFragment();
-//                            break;
-//                        case DISCONNECT:
-//                            break;
-//                        case TIMEOUT:
-//                            break;
-//                        default:
-//                            break;
-//                    }
-//                }
-//            });
-//            mServer.initial();
-//            mServer.seekPeer();
+
 
         }
     }
@@ -557,7 +287,7 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
             ;//transfer = mServer.getDataTransfer();
         } else {
             //transfer = mClient.getDataTransfer();
-            if(mVehicleType.equals("car"))
+            if(mVehicleType.equals(TYPE_CAR))
             {
                 mControlFragment = new ControlFragmentCar(this, mClient.getHostAddress(), new MediaEngineObserver() {
                     @Override
@@ -565,9 +295,9 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
 
 
                     }
-                }, mClient, mIsServer);
+                }, mClient, mIsServer, false);
             }
-            else if(mVehicleType.equals("tank"))
+            else if(mVehicleType.equals(TYPE_TANK))
             {
                 mControlFragment = new ControlFragmentTank(this, mClient.getHostAddress(), new MediaEngineObserver() {
                     @Override
@@ -595,7 +325,6 @@ public class WiFiServiceDiscoveryActivity extends Activity implements
        }
        else
        {
-    	   
     	   getFragmentManager().beginTransaction().replace(R.id.container_root, mControlFragment, "control").commitAllowingStateLoss();
        }
         

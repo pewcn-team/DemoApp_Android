@@ -12,8 +12,7 @@ import android.widget.LinearLayout;
 
 import com.example.android.wifidirect.discovery.R;
 import com.example.connection.ControlCommand;
-import com.example.connection.DataTransfer;
-import com.example.connection.DataTransfer.IDataReceiver;
+import com.example.connection.DataTransferTCP;
 import com.example.control.TankController;
 import com.example.wifiap.WifiAPBase;
 
@@ -33,7 +32,7 @@ public class ControlFragmentTank extends Fragment {
 	public static int BUTTON_INDEX_RIGHT = 3;
 	public static int BUTTON_STATE_DOWN = 0;
 	public static int BUTTON_STATE_UP = 1;
-	public DataTransfer mDataTransfer = null;
+	public DataTransferTCP mDataTransfer = null;
 	private Button currentButton = null;
 	private Button prevButton = null;
 	private String mRemoteIP;
@@ -53,26 +52,26 @@ public class ControlFragmentTank extends Fragment {
 	{
 		mActivity = activity;
 		mWifiAP = wifiAP;
-		mWifiAP.registerDataReceiver(new IDataReceiver() {
-			
-			@Override
-			public void onReceiveData(byte[] data) {
-				final ControlCommand command = (ControlCommand) new ControlCommand().fromBytes(data);
-				if(null != command)
-				{
-					mActivity.runOnUiThread(new Runnable() {
-						
-						@Override
-						public void run() {
-							changeButtonState(command.mDirection, command.mState);
-							
-						}
-					});
-					
-				}
-				
-			}
-		});
+//		mWifiAP.registerDataReceiver(new IDataReceiver() {
+//
+//			@Override
+//			public void onReceiveData(byte[] data) {
+//				final ControlCommand command = (ControlCommand) new ControlCommand().fromBytes(data);
+//				if(null != command)
+//				{
+//					mActivity.runOnUiThread(new Runnable() {
+//
+//						@Override
+//						public void run() {
+//							changeButtonState(command.mDirection, command.mState);
+//
+//						}
+//					});
+//
+//				}
+//
+//			}
+//		});
 
 		mRemoteIP = remoteIP;
 		mObserver = observer;

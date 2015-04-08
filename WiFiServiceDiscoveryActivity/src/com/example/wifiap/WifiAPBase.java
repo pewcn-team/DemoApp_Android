@@ -1,6 +1,6 @@
 package com.example.wifiap;
 
-import com.example.connection.DataTransfer;
+import com.example.connection.DataTransferTCP;
 import com.example.connection.IConnection;
 
 public abstract class WifiAPBase implements IConnection {
@@ -36,10 +36,10 @@ public abstract class WifiAPBase implements IConnection {
 	
 	abstract public String getHostAddress();
 	
-    abstract public void registerDataReceiver(DataTransfer.IDataReceiver dataReceiver);
+    //abstract public void registerDataReceiver(DataTransferTCP.IDataReceiver dataReceiver);
     
     
-    abstract public void unregisterDataReceiver(DataTransfer.IDataReceiver dataReceiver);
+    //abstract public void unregisterDataReceiver(DataTransferTCP.IDataReceiver dataReceiver);
 
 
 }

@@ -2,7 +2,6 @@ package com.example.wifiap;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.InetAddress;
 import java.util.ArrayList;
 
 import android.content.BroadcastReceiver;
@@ -13,12 +12,10 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.NetworkInfo.DetailedState;
 import android.net.wifi.WifiConfiguration;
-import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 
-import com.example.android.wifidirect.discovery.WiFiChatFragment;
-import com.example.connection.DataTransfer;
+import com.example.connection.DataTransferTCP;
 import com.example.connection.IConnection;
 
 public class WifiAPServer extends WifiAPBase{
@@ -27,7 +24,7 @@ public class WifiAPServer extends WifiAPBase{
     String mSSID = "tank_test";
     String mPasswd = "12345678";
     Context mContext = null;
-    private DataTransfer mDataTransfer = null;
+    private DataTransferTCP mDataTransfer = null;
     public static final int WIFI_CONNECTED = 0x01;
     public static final int WIFI_CONNECT_FAILED = 0x02;
     public static final int WIFI_CONNECTING = 0x03;
@@ -96,7 +93,7 @@ public class WifiAPServer extends WifiAPBase{
 
     @Override
     public void disconnect() {
-        mDataTransfer.destroy();
+        mDataTransfer.stopTransfer();
         mDataTransfer = null;
         changeState(ConnectionState.DISCONNECT);
     }
@@ -152,15 +149,15 @@ public class WifiAPServer extends WifiAPBase{
     	mDataTransfer.sendData(data);
     }
     
-    public void registerDataReceiver(DataTransfer.IDataReceiver dataReceiver)
-    {
-    	mDataTransfer.registerDataReceiver(dataReceiver);
-    }
-    
-    public void unregisterDataReceiver(DataTransfer.IDataReceiver dataReceiver)
-    {
-    	mDataTransfer.unregisterDataReceiver(dataReceiver);
-    }
+//    public void registerDataReceiver(DataTransferTCP.IDataReceiver dataReceiver)
+//    {
+//    	mDataTransfer.registerDataReceiver(dataReceiver);
+//    }
+//
+//    public void unregisterDataReceiver(DataTransferTCP.IDataReceiver dataReceiver)
+//    {
+//    	mDataTransfer.unregisterDataReceiver(dataReceiver);
+//    }
 
     public String getHostAddress()
     {
@@ -251,21 +248,21 @@ public class WifiAPServer extends WifiAPBase{
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                if (null == mDataTransfer) {
-                    mDataTransfer = DataTransfer
-                            .createServerTransfer(
-                                    null,new DataTransfer.IConnectionListener() {
-                                        @Override
-                                        public void onConnect() {
-                                            changeState(ConnectionState.CONNECTED);
-                                        }
-
-                                        @Override
-                                        public void onDisconnect() {
-                                            changeState(ConnectionState.DISCONNECT);
-                                        }
-                                    });
-                }
+//                if (null == mDataTransfer) {
+//                    mDataTransfer = DataTransferTCP
+//                            .createServerTransfer(
+//                                    null, new DataTransferTCP.IConnectionListener() {
+//                                        @Override
+//                                        public void onConnect() {
+//                                            changeState(ConnectionState.CONNECTED);
+//                                        }
+//
+//                                        @Override
+//                                        public void onDisconnect() {
+//                                            changeState(ConnectionState.DISCONNECT);
+//                                        }
+//                                    });
+//                }
             }
         });
         t.start();

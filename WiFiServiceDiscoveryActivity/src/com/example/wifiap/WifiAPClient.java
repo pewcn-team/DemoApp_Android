@@ -1,24 +1,17 @@
 package com.example.wifiap;
 
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.example.android.wifidirect.discovery.WiFiServiceDiscoveryActivity;
-import com.example.android.wifidirect.discovery.WiFiChatFragment.MessageTarget;
-import com.example.connection.DataTransfer;
-import com.example.connection.DataTransfer.IConnectionListener;
+import com.example.connection.DataTransferTCP;
+import com.example.connection.DataTransferUDP;
 import com.example.connection.IConnection;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.NetworkInfo.DetailedState;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
@@ -36,15 +29,17 @@ public class WifiAPClient extends WifiAPBase{
     private Context mContext;
     private boolean  mIsConnecting =false;
     private boolean mIsConnected = false;
-	private String mTargetName = "tank_test";
-	private String mTargetPassword = "12345678";
-	private DataTransfer mDataTransfer = null;
+	private String mTargetName = "EQPlayDemo";
+	private String mTargetPassword = "eqplaydemo";
 	private boolean mIsClientCreated = false;
-	private ArrayList<IConnection.IOnStateChangeListener> mListeners = new ArrayList<IConnection.IOnStateChangeListener>();
+	private DataTransferUDP mDataTransfer = null;
+	private List<IOnStateChangeListener> mListeners = null;
+
 	public WifiAPClient(Context context)
 	{
 		mContext = context;
-		mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);  
+		mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+		mListeners = new ArrayList<IOnStateChangeListener>();
 	}
 
     /**地址转换程序
@@ -64,44 +59,6 @@ public class WifiAPClient extends WifiAPBase{
         }
     }
 
-//	public DataTransfer getDataTransfer()
-//	{
-//		return mDataTransfer;
-//	}
-    
-
-	    
-
-//	/**
-//	 * 判断wifi是否连接成功,不是network
-//	 * 
-//	 * @param context
-//	 * @return
-//	 */
-//	private int isWifiContected(Context context) {
-//		ConnectivityManager connectivityManager = (ConnectivityManager) context
-//				.getSystemService(Context.CONNECTIVITY_SERVICE);
-//		NetworkInfo wifiNetworkInfo = connectivityManager
-//				.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-//
-//		Log.v(TAG,
-//				"isConnectedOrConnecting = "
-//						+ wifiNetworkInfo.isConnectedOrConnecting());
-//		Log.d(TAG,
-//				"wifiNetworkInfo.getDetailedState() = "
-//						+ wifiNetworkInfo.getDetailedState());
-//		if (wifiNetworkInfo.getDetailedState() == DetailedState.OBTAINING_IPADDR
-//				|| wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTING) {
-//			return WIFI_CONNECTING;
-//		} else if (wifiNetworkInfo.getDetailedState() == DetailedState.CONNECTED) {
-//			return WIFI_CONNECTED;
-//		} else {
-//			Log.d(TAG,
-//					"getDetailedState() == "
-//							+ wifiNetworkInfo.getDetailedState());
-//			return WIFI_CONNECT_FAILED;
-//		}
-//	}
   
     public void onPause()
     {
@@ -189,8 +146,9 @@ public class WifiAPClient extends WifiAPBase{
 	}
 	@Override
 	public void disconnect() {
-		mDataTransfer.destroy();
+		mDataTransfer.stop();
 		changeState(ConnectionState.DISCONNECT);
+		mIsConnected = false;
 	}
 	@Override
 	public void reset() {
@@ -229,7 +187,7 @@ public class WifiAPClient extends WifiAPBase{
         List<ScanResult> results = mWifiManager.getScanResults();  
         for(ScanResult result: results)
         {
-        	if(result.SSID.equals("tank_test"))
+        	if(result.SSID.equals(mTargetName))
         	{
         		if(WifiManager.calculateSignalLevel(result.level, 100) > 60)
         		{
@@ -252,45 +210,19 @@ public class WifiAPClient extends WifiAPBase{
     
     private void createDataTransfer(InetAddress address)
     {
-		final InetAddress fAddress = address;
-		if (false == mIsClientCreated) {
-			mIsClientCreated = true;
-			Thread t = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					if (null == mDataTransfer) {
-						
-						String hostAddress = fAddress.getHostAddress();
-						String []sub = hostAddress.split("\\.");
-						if(sub.length == 4)
-						{
-							hostAddress = String.format("%s.%s.%s.1", sub[0], sub[1], sub[2]);
-						}
-						try {
-							InetAddress address = InetAddress.getByName(hostAddress);
-							mDataTransfer = DataTransfer.createClientTransfer(null,address, new IConnectionListener() {
-								
-								@Override
-								public void onDisconnect() {
-									changeState(ConnectionState.DISCONNECT);
-								}
-
-								@Override
-								public void onConnect() {
-									changeState(ConnectionState.CONNECTED);
-									
-								}
-							});
-						} catch (UnknownHostException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						
-					}
-				}
-			});
-			t.start();
+		if(!mIsConnected)
+		{
+			if(null == mDataTransfer)
+			{
+				mDataTransfer = new DataTransferUDP();
+			}
+			mDataTransfer.start();
+			changeState(ConnectionState.CONNECTED);
+			mIsConnected = true;
 		}
+
+
+
     }
     
 	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
@@ -312,7 +244,7 @@ public class WifiAPClient extends WifiAPBase{
 					int ip = winfo.getIpAddress();
 					InetAddress address = intToInetAddress(ip);
 					createDataTransfer(address);
-					mIsConnected = true;
+
 
 				} else if (mIsConnected == true
 						&& (0 == info.getDetailedState().compareTo(
@@ -320,7 +252,7 @@ public class WifiAPClient extends WifiAPBase{
 								.getDetailedState().compareTo(
 										NetworkInfo.DetailedState.DISCONNECTED))) {
 					Log.v(TAG, "wifi disconnect!");
-					mIsConnected = false;
+
 					disconnect();
 				}
 
@@ -335,30 +267,29 @@ public class WifiAPClient extends WifiAPBase{
 
     public void sendData(byte[] data)
     {
-    	mDataTransfer.sendData(data);
+    	//mDataTransfer.sendMessage();
+		mDataTransfer.sendMessage(data);
     }
+
+	public void sendData(char data)
+	{
+
+	}
     
     public String getHostAddress()
     {
-    	if(null!=mDataTransfer)
-    	{
-    		return mDataTransfer.getPeerAddress().getHostAddress();
-    	}
-    	else
-    	{
-    		return "";
-    	}
+//    	if(null!=mDataTransfer)
+//    	{
+//    		return mDataTransfer.getPeerAddress().getHostAddress();
+//    	}
+//    	else
+//    	{
+//    		return "";
+//    	}
+		return "";
     }
-    
-    public void registerDataReceiver(DataTransfer.IDataReceiver dataReceiver)
-    {
-    	mDataTransfer.registerDataReceiver(dataReceiver);
-    }
-    
-    public void unregisterDataReceiver(DataTransfer.IDataReceiver dataReceiver)
-    {
-    	mDataTransfer.unregisterDataReceiver(dataReceiver);
-    }
+
+
 	
 	
 }
