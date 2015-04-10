@@ -1,14 +1,25 @@
 package com.example.app;
 
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaPlayer;
+import android.os.Handler;
+import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 
+import android.view.animation.RotateAnimation;
+import android.widget.*;
 import com.example.connection.BatteryState;
 import com.example.connection.ControlCommand;
 import com.example.connection.ICommand;
 
+import com.example.widget.MyRelativeLayout;
+import org.jscience.mathematics.number.FloatingPoint;
+import org.jscience.mathematics.vector.Float64Vector;
+import org.jscience.mathematics.vector.Vector;
 import org.webrtc.webrtcdemo.MediaEngineObserver;
 import org.webrtc.webrtcdemo.WebRTCLib;
 
@@ -23,10 +34,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 public class ControlFragmentCar extends Fragment {
 	Button mBtnUp;
@@ -210,6 +217,37 @@ public class ControlFragmentCar extends Fragment {
             Bundle savedInstanceState)
 	{
 		View view = inflater.inflate(R.layout.fragment_control_car, null);
+		MyRelativeLayout rl = (MyRelativeLayout)view.findViewById(R.id.rl_wheel);
+		mIvWheel = (ImageView)view.findViewById(R.id.imageView_wheel);
+		mIvWheel.setImageResource(R.drawable.wheel);
+		Bitmap bmp = ((BitmapDrawable)mIvWheel.getDrawable()).getBitmap();
+		mPiovX = bmp.getWidth()/2.0f;
+		mPiovY = bmp.getHeight()/2.0f;
+		rl.setOnTouchListener(new View.OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				Log.v(WiFiServiceDiscoveryActivity.TAG, "touch" + event.getX() + " " + event.getY());
+				Log.v(WiFiServiceDiscoveryActivity.TAG, "piovt" + mPiovX + " " + mPiovY);
+				if(event.getAction() == MotionEvent.ACTION_DOWN)
+				{
+					mPrevX = event.getX();
+					mPrevY = event.getY();
+					ControlCommand command = new ControlCommand();
+
+				}
+				else if(event.getAction() == MotionEvent.ACTION_MOVE)
+				{
+					mCurrX = event.getX();
+					mCurrY = event.getY();
+				}
+				else if(event.getAction() == MotionEvent.ACTION_UP)
+				{
+					mPrevX = mCurrX = 99999.0f;
+					mPrevY = mCurrY = 99999.0f;
+				}
+				return false;
+			}
+		});
 		mBtnUp = (Button)view.findViewById(R.id.button_up);
 		mBtnUp.setOnTouchListener(mOnTouchListenerVertical);
 		mBtnDown = (Button)view.findViewById(R.id.button_down);
@@ -218,47 +256,50 @@ public class ControlFragmentCar extends Fragment {
 		mBtnLeft.setOnTouchListener(mOnTouchListenerHorizontal);
 		mBtnRight = (Button)view.findViewById(R.id.button_right);
 		mBtnRight.setOnTouchListener(mOnTouchListenerHorizontal);
-		mRemoteLayout = (LinearLayout)view.findViewById(R.id.layout_remote);
-		mLocalLayout = (LinearLayout)view.findViewById(R.id.layout_local);
+		//mRemoteLayout = (LinearLayout)view.findViewById(R.id.layout_remote);
+		//mLocalLayout = (LinearLayout)view.findViewById(R.id.layout_local);
 		mTvBattery = (TextView)view.findViewById(R.id.textView_battery);
-		mEtxInput = (EditText)view.findViewById(R.id.editText_input);
-		mEtxInput.setVisibility(View.GONE);
-		mEtxInput.addTextChangedListener(new TextWatcher() {
-			
-			@Override
-			public void onTextChanged(CharSequence s, int start, int before, int count) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void beforeTextChanged(CharSequence s, int start, int count,
-					int after) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void afterTextChanged(Editable s) {
-				String str = s.toString();
-				if(str.equals("前进"))
-				{
-					ControlCommand command = new ControlCommand();
-					command.mState = (byte) BUTTON_STATE_DOWN;
-					command.mDirection = (byte) BUTTON_INDEX_DOWN;
-					sendCommand(command);
-					
-				}
-				else if(str.endsWith("后退"))
-				{
-					ControlCommand command = new ControlCommand();
-					command.mState = (byte) BUTTON_STATE_DOWN;
-					command.mDirection = (byte) BUTTON_INDEX_UP;
-					sendCommand(command);					
-				}
-				
-			}
-		});
+		//mEtxInput = (EditText)view.findViewById(R.id.editText_input);
+//		mEtxInput.setVisibility(View.GONE);
+//		mEtxInput.addTextChangedListener(new TextWatcher() {
+//
+//			@Override
+//			public void onTextChanged(CharSequence s, int start, int before, int count) {
+//				// TODO Auto-generated method stub
+//
+//			}
+//
+//			@Override
+//			public void beforeTextChanged(CharSequence s, int start, int count,
+//					int after) {
+//				// TODO Auto-generated method stub
+//
+//			}
+//
+//			@Override
+//			public void afterTextChanged(Editable s) {
+//				String str = s.toString();
+//				if(str.equals("前进"))
+//				{
+//					ControlCommand command = new ControlCommand();
+//					command.mState = (byte) BUTTON_STATE_DOWN;
+//					command.mDirection = (byte) BUTTON_INDEX_DOWN;
+//					sendCommand(command);
+//
+//				}
+//				else if(str.endsWith("后退"))
+//				{
+//					ControlCommand command = new ControlCommand();
+//					command.mState = (byte) BUTTON_STATE_DOWN;
+//					command.mDirection = (byte) BUTTON_INDEX_UP;
+//					sendCommand(command);
+//				}
+//
+//			}
+//		});
+
+
+
 		return view;
 	}
 	
@@ -368,6 +409,8 @@ public class ControlFragmentCar extends Fragment {
 				mWebrtc = null;
 			}
 		}
+
+		mIsStop = true;
 	}
 
 	@Override
@@ -375,7 +418,10 @@ public class ControlFragmentCar extends Fragment {
 	{
 		super.onStart();
 		initSound();
+		sampleThread.start();
+
 	}
+
 
 	MediaPlayer mMediaPlayer = null;
 	private void initSound()
@@ -395,5 +441,93 @@ public class ControlFragmentCar extends Fragment {
 	{
 		mMediaPlayer.pause();
 	}
+
+
+	boolean mIsStop = false;
+	//Handler wheelHandler;
+
+	private Thread sampleThread = new Thread(new Runnable() {
+		@Override
+		public void run() {
+			while(!mIsStop)
+			{
+				double degree = calcRotation();
+				//Log.v(WiFiServiceDiscoveryActivity.TAG, "" + degree);
+				applyToWheel(degree);
+				try {
+					Thread.currentThread().sleep(30);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}) ;
+
+	ImageView mIvWheel;
+	private void applyToWheel(double degree)
+	{
+		final float degreeR = (float)(degree/Math.PI*180.0);
+		Log.v(WiFiServiceDiscoveryActivity.TAG, "degreeR " + degreeR);
+		if(degreeR<-0.01)
+		{
+			Log.v(WiFiServiceDiscoveryActivity.TAG, "turn left");
+			ControlCommand command = new ControlCommand();
+			command.mState = (byte) BUTTON_STATE_DOWN;
+			command.mDirection = (byte) BUTTON_INDEX_LEFT;
+			sendCommand(command);
+		}
+		else if(degreeR>0.01)
+		{
+			Log.v(WiFiServiceDiscoveryActivity.TAG, "turn right");
+			ControlCommand command = new ControlCommand();
+			command.mState = (byte) BUTTON_STATE_DOWN;
+			command.mDirection = (byte) BUTTON_INDEX_RIGHT;
+			sendCommand(command);
+		}
+		else if(Math.abs(degreeR)<0.01)
+		{
+			Log.v(WiFiServiceDiscoveryActivity.TAG, "reset wheel");
+			ControlCommand command = new ControlCommand();
+			command.mState = (byte) BUTTON_STATE_UP;
+			command.mDirection = (byte) BUTTON_INDEX_RIGHT;
+			sendCommand(command);
+			command.mState = (byte) BUTTON_STATE_UP;
+			command.mDirection = (byte) BUTTON_INDEX_LEFT;
+			sendCommand(command);
+		}
+
+		getActivity().runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				mIvWheel.setRotation(degreeR);
+			}
+		});
+
+	}
+	float mPrevX = 99999.0f, mPrevY = 99999.0f, mCurrX = 99999.0f, mCurrY = 99999.0f, mPiovX, mPiovY;
+
+
+	double calcRotation()
+	{
+		Float64Vector vec1 = Float64Vector.valueOf(mPrevX-mPiovX, mPrevY-mPiovY, 0);
+		Float64Vector vec2 = Float64Vector.valueOf(mCurrX-mPiovX, mCurrY-mPiovY, 0);
+		vec1 = vec1.times(vec1.norm().inverse());
+		vec2 = vec2.times(vec2.norm().inverse());
+		double degree;
+		if(Math.abs(vec1.times(vec2).doubleValue()-1)<0.001)
+		{
+			degree = 0;
+		}
+		else
+		{
+			degree = Math.acos(vec1.times(vec2).doubleValue());
+		}
+		if(vec1.cross(vec2).get(2).doubleValue()<0)
+		{
+			degree = -degree;
+		}
+		return degree;
+	}
+
 
 }
