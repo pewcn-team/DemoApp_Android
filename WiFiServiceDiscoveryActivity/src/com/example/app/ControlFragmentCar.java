@@ -17,6 +17,7 @@ import com.example.connection.ControlCommand;
 import com.example.connection.ICommand;
 
 import com.example.widget.MyRelativeLayout;
+import com.example.widget.WheelControl;
 import org.jscience.mathematics.number.FloatingPoint;
 import org.jscience.mathematics.vector.Float64Vector;
 import org.jscience.mathematics.vector.Vector;
@@ -59,6 +60,7 @@ public class ControlFragmentCar extends Fragment {
 	private ControlCommand mCurrControlCommandHori = null;
 	private WifiAPBase mWifiAP;
 	private boolean mIsWebRtcEnabled = false;
+	private WheelControl mWheelControl;
 	public ControlFragmentCar(Activity activity, String remoteIP, MediaEngineObserver observer, WifiAPBase wifiap, boolean isServer, boolean isWebRtcEnabled)
 	{
 		mActivity = activity;
@@ -218,36 +220,25 @@ public class ControlFragmentCar extends Fragment {
 	{
 		View view = inflater.inflate(R.layout.fragment_control_car, null);
 		MyRelativeLayout rl = (MyRelativeLayout)view.findViewById(R.id.rl_wheel);
-		mIvWheel = (ImageView)view.findViewById(R.id.imageView_wheel);
-		mIvWheel.setImageResource(R.drawable.wheel);
-		Bitmap bmp = ((BitmapDrawable)mIvWheel.getDrawable()).getBitmap();
-		mPiovX = bmp.getWidth()/2.0f;
-		mPiovY = bmp.getHeight()/2.0f;
-		rl.setOnTouchListener(new View.OnTouchListener() {
+		ImageView IvWheel = (ImageView)view.findViewById(R.id.imageView_wheel);
+		mWheelControl = new WheelControl(getActivity(), IvWheel, rl, new WheelControl.RotateCallback() {
 			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				Log.v(WiFiServiceDiscoveryActivity.TAG, "touch" + event.getX() + " " + event.getY());
-				Log.v(WiFiServiceDiscoveryActivity.TAG, "piovt" + mPiovX + " " + mPiovY);
-				if(event.getAction() == MotionEvent.ACTION_DOWN)
-				{
-					mPrevX = event.getX();
-					mPrevY = event.getY();
-					ControlCommand command = new ControlCommand();
+			public void onHold() {
 
-				}
-				else if(event.getAction() == MotionEvent.ACTION_MOVE)
-				{
-					mCurrX = event.getX();
-					mCurrY = event.getY();
-				}
-				else if(event.getAction() == MotionEvent.ACTION_UP)
-				{
-					mPrevX = mCurrX = 99999.0f;
-					mPrevY = mCurrY = 99999.0f;
-				}
-				return false;
+			}
+
+			@Override
+			public void onDrag(double degree) {
+				applyToWheel(degree);
+			}
+
+			@Override
+			public void onRelease() {
+
 			}
 		});
+
+
 		mBtnUp = (Button)view.findViewById(R.id.button_up);
 		mBtnUp.setOnTouchListener(mOnTouchListenerVertical);
 		mBtnDown = (Button)view.findViewById(R.id.button_down);
@@ -394,7 +385,17 @@ public class ControlFragmentCar extends Fragment {
     public void onPause(){
         super.onPause();
     }
-	
+
+
+	@Override
+	public void onStart()
+	{
+		super.onStart();
+		initSound();
+		mWheelControl.start();
+
+	}
+
     @Override
     public void onStop() {
 		super.onStop();
@@ -409,19 +410,8 @@ public class ControlFragmentCar extends Fragment {
 				mWebrtc = null;
 			}
 		}
-
-		mIsStop = true;
+		mWheelControl.stop();
 	}
-
-	@Override
-	public void onStart()
-	{
-		super.onStart();
-		initSound();
-		sampleThread.start();
-
-	}
-
 
 	MediaPlayer mMediaPlayer = null;
 	private void initSound()
@@ -443,27 +433,6 @@ public class ControlFragmentCar extends Fragment {
 	}
 
 
-	boolean mIsStop = false;
-	//Handler wheelHandler;
-
-	private Thread sampleThread = new Thread(new Runnable() {
-		@Override
-		public void run() {
-			while(!mIsStop)
-			{
-				double degree = calcRotation();
-				//Log.v(WiFiServiceDiscoveryActivity.TAG, "" + degree);
-				applyToWheel(degree);
-				try {
-					Thread.currentThread().sleep(30);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}) ;
-
-	ImageView mIvWheel;
 	private void applyToWheel(double degree)
 	{
 		final float degreeR = (float)(degree/Math.PI*180.0);
@@ -495,39 +464,6 @@ public class ControlFragmentCar extends Fragment {
 			command.mDirection = (byte) BUTTON_INDEX_LEFT;
 			sendCommand(command);
 		}
-
-		getActivity().runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				mIvWheel.setRotation(degreeR);
-			}
-		});
-
 	}
-	float mPrevX = 99999.0f, mPrevY = 99999.0f, mCurrX = 99999.0f, mCurrY = 99999.0f, mPiovX, mPiovY;
-
-
-	double calcRotation()
-	{
-		Float64Vector vec1 = Float64Vector.valueOf(mPrevX-mPiovX, mPrevY-mPiovY, 0);
-		Float64Vector vec2 = Float64Vector.valueOf(mCurrX-mPiovX, mCurrY-mPiovY, 0);
-		vec1 = vec1.times(vec1.norm().inverse());
-		vec2 = vec2.times(vec2.norm().inverse());
-		double degree;
-		if(Math.abs(vec1.times(vec2).doubleValue()-1)<0.001)
-		{
-			degree = 0;
-		}
-		else
-		{
-			degree = Math.acos(vec1.times(vec2).doubleValue());
-		}
-		if(vec1.cross(vec2).get(2).doubleValue()<0)
-		{
-			degree = -degree;
-		}
-		return degree;
-	}
-
 
 }

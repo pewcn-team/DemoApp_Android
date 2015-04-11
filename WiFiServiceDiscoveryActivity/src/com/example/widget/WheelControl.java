@@ -72,8 +72,11 @@ public class WheelControl {
         mActivity = activity;
         mWheel = wheel;
         mWheelContainer = wheelContainer;
-        mPivotX = mWheel.getPivotX();
-        mPivotY = mWheel.getPivotY();
+        int width =View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED);
+        int height =View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED);
+        wheel.measure(width,height);
+        mPivotX = wheel.getMeasuredWidth()/2.0f;
+        mPivotY = wheel.getMeasuredHeight()/2.0f;
         mRotateCallback = callback;
         mWheelContainer.setOnTouchListener(new View.OnTouchListener() {
             @Override
