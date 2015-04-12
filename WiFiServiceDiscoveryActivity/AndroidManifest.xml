@@ -30,12 +30,12 @@
         android:name="android.test.InstrumentationTestRunner"
         android:targetPackage="com.example.android.wifidirect.discovery" />
     <application
-        android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name"
+        android:icon="@drawable/logo"
+        android:label="EQPlay"
         android:allowBackup ="true" >
         <activity
             android:name=".WiFiServiceDiscoveryActivity"
-            android:label="@string/app_name" 
+            android:label="EQPlay"
             android:configChanges="orientation|keyboardHidden"
             android:screenOrientation="landscape">
             <intent-filter>

@@ -51,7 +51,7 @@ public class ServerActivity extends Activity {
 
 
 			            }
-			        }, mServer, true);
+			        }, mServer, true, true);
 			        
 			        getFragmentManager().beginTransaction().add(R.id.container_root, mControlFragment, "control").commitAllowingStateLoss();
 					

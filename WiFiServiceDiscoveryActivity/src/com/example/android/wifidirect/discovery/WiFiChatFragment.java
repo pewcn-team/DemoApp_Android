@@ -15,7 +15,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.connection.DataTransfer;
+import com.example.connection.DataTransferTCP;
 
 /**
  * This fragment handles chat related UI which includes a list view for messages
@@ -29,7 +29,7 @@ public class WiFiChatFragment extends Fragment {
     private ListView listView;
     ChatMessageAdapter adapter = null;
     private List<String> items = new ArrayList<String>();
-    private DataTransfer mDataTransfer = null;
+    private DataTransferTCP mDataTransfer = null;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -64,7 +64,7 @@ public class WiFiChatFragment extends Fragment {
         chatManager = obj;
     }
     
-    public void setDataTransfer(DataTransfer dataTransfer)
+    public void setDataTransfer(DataTransferTCP dataTransfer)
     {
     	mDataTransfer = dataTransfer;
     }

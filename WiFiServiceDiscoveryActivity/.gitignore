@@ -28,7 +28,7 @@ proguard/
 
 # Log Files
 *.log
-
+*.iml
 
 ### Eclipse ###
 *.pydevproject

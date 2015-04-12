@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
+<<<<<<< HEAD
   <component name="EclipseModuleManager" forced_jdk="true">
     <conelement value="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK" />
     <conelement value="com.android.ide.eclipse.adt.LIBRARIES" />
@@ -22,5 +23,22 @@
     <orderEntry type="library" exported="" name="com.android.ide.eclipse.adt.DEPENDENCIES" level="application" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="android" level="project" />
+=======
+  <component name="FacetManager">
+    <facet type="android" name="Android">
+      <configuration />
+    </facet>
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/gen" isTestSource="false" generated="true" />
+    </content>
+    <orderEntry type="jdk" jdkName="Android API 19 Platform" jdkType="Android SDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="WebRTCDemo1" />
+    <orderEntry type="library" name="jscience" level="project" />
+>>>>>>> 21d5cbc6956db314cbf59fb25434793f6ca83650
   </component>
 </module>
